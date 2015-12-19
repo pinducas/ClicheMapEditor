@@ -3,10 +3,12 @@ package core;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.PrintWriter;
 import java.util.Scanner;
 
 import javax.swing.JButton;
@@ -14,9 +16,11 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class Manager {
 	private final int LEFT = 0,RIGHT = 1,UP = 2,DOWN = 3,MOUSE = 4;
+	private final int CREATEBOX = 0,DELETEBOX = 1;
 	
 	private boolean[] pressing;
 	public boolean pressedEnter;
@@ -26,6 +30,8 @@ public class Manager {
 	public int [][]map;
 	
 	private Platform[] platforms;
+	
+	private int boxtool;
 	
 	private int tileWidth;
 	private int tileHeight;
@@ -52,6 +58,10 @@ public class Manager {
 	private JButton boxMode;
 	private JButton save;
 	private JButton load;
+	private JButton createbox;
+	private JButton deletebox;
+	private JButton movebox;
+	
 	
 	private JButton up;
 	private JButton down;
@@ -60,6 +70,8 @@ public class Manager {
 	private JFileChooser explorer;
 	
 	private Point mousePosition;
+	
+	private Platform selectedPlatform;
 	
 	
 	public Manager(JPanel panel){
@@ -146,6 +158,29 @@ public class Manager {
 		panel.add(up);
 		panel.add(down);
 		
+		boxtool = -1;
+		
+		createbox = new JButton("Create Box");
+		deletebox = new JButton("Delete Box");
+		movebox = new JButton("Move Box");
+		createbox.setBounds(820, 80, 120,30);
+		deletebox.setBounds(975, 80, 120,30);
+		movebox.setBounds(820, 125, 120,30);
+
+		
+		panel.add(createbox);
+		panel.add(deletebox);
+		panel.add(movebox);
+		
+		temp = new JLabel("Platforms");
+		temp.setBounds(820,40,500,50);
+		panel.add(temp);
+		
+		temp = new JLabel("___________________________________________________");
+		temp.setBounds(800,140,500,50);
+		panel.add(temp);
+		
+		
 		mousePosition = new Point(0, 0);
 		
 		String [] options = {"New Map","Load Map","Cancel"};
@@ -153,55 +188,33 @@ public class Manager {
 		int resp = JOptionPane.showOptionDialog(null,"Choose something","Map editor",JOptionPane.DEFAULT_OPTION,
 				JOptionPane.PLAIN_MESSAGE,null,options, options[0]);
 		
-		
+		FileNameExtensionFilter filter = new FileNameExtensionFilter(".map FILES", "map");
 		explorer = new JFileChooser();
+		explorer.setFileFilter(filter);
+		
+		selectedPlatform = null;
 		
 		if(resp == 2)System.exit(0);
 		if(resp == 1){
-			resp = explorer.showOpenDialog(panel);
-			
-			if(resp == JFileChooser.APPROVE_OPTION){
-				File file = explorer.getSelectedFile();
-				String path = file.getAbsolutePath();
-				if(path.charAt(path.length()-1)!='p'|| path.charAt(path.length()-4) != '.'||
-						path.charAt(path.length()-2)!='a' || path.charAt(path.length()-3)!='m'){
-					JOptionPane.showMessageDialog(null, "Not a map file!");
-					System.exit(0);
-				}
-				loadMap(path);
-			}
-			else{
-				JOptionPane.showMessageDialog(null, "Ok then... Loading clear map");
-			}
-			
-			
+			loadMap();		
 		}
 		
 	}
 	
 	public void update(){
-		if(load.getModel().isPressed()){
-			String path = JOptionPane.showInputDialog("Digite o endereco do arquivo");
-			loadMap(path);
-		}
-		
-		if(boxMode.getModel().isPressed() && !showPlatforms){
-			showPlatforms = true;
-		}
-		if(tileMode.getModel().isArmed() && showPlatforms){
-			showPlatforms = false;
-		}
+		if(load.getModel().isPressed())loadMap();
+		if(save.getModel().isPressed())saveMap();
+		if(boxMode.getModel().isPressed() && !showPlatforms)showPlatforms = true;
+		if(tileMode.getModel().isArmed() && showPlatforms)showPlatforms = false;
+		if(up.getModel().isPressed() && positiony > 0)positiony -= 10;
+		if(down.getModel().isPressed())positiony += 10;
+		if(createbox.getModel().isPressed())boxtool = 0;
+		if(deletebox.getModel().isPressed())boxtool = 1;
+		if(movebox.getModel().isPressed())boxtool = -1;
 		
 		for(Platform p:platforms)p.update(camera);
 		
-		if(up.getModel().isPressed()){
-			if(positiony > 0)positiony -= 10;
 		
-		}
-		if(down.getModel().isPressed()){
-			positiony += 10;	
-			
-		}
 		
 		
 		if(pressing[MOUSE]){
@@ -215,16 +228,43 @@ public class Manager {
 			else if(!showPlatforms){
 				panel.requestFocus();
 				
-				x = (int)(camera.getX()+mousePosition.x-10);
-				y = (int)(510-mousePosition.y-camera.getY());
+				x = mouseMapPos().x;
+				y = mouseMapPos().y;
 				if(x >= 0 && y>=0 && x < camera.getX()+camera.getW()-10 && y< -camera.getY()+camera.getH()-10)
 					changeTile(x/tileWidth,y/tileHeight);
-	}
+			}
+			else if(showPlatforms){
+				if(boxtool == -1){
+					System.out.println("PRESSING");
+					if(selectedPlatform!=null){
+						if(!selectedPlatform.getRect(camera).intersects(new Rectangle(mouseMapPos().x-2, mouseMapPos().y-2, 4, 4))){
+							selectedPlatform = null;
+						}
+					}
+					if(selectedPlatform == null){
+						for(Platform p:platforms){
+							System.out.println("X: "+p.getRect(camera).x+" MX: "+mouseMapPos().x);
+							if(p.getRect(camera).intersects(new Rectangle(mouseMapPos().x-2, mouseMapPos().y-2, 4, 4))){
+								selectedPlatform = p;
+								System.out.println(p.x);
+								break;
+							}
+						}
+					}
+				}
+				
+				
+			}
 		}
+		
 		
 		
 		boxWidth.update();
 		boxHeight.update();
+	}
+	
+	public Point mouseMapPos(){
+		return new Point((int)(camera.getX()+mousePosition.x-10),(int)(510-mousePosition.y-camera.getY()));
 	}
 	
 	public void draw(Graphics2D gm,Graphics2D gt){
@@ -255,13 +295,11 @@ public class Manager {
 	
 	public void keyPressed(int k) {
 		if(k == KeyEvent.VK_RIGHT && !pressing[RIGHT]){
-			System.out.println("RIGHT");
 			if(camera.getX() < tileWidth * (map[0].length-1) - camera.getW())
 				camera.translate(tileWidth/2f, 0);	
 			pressing[RIGHT] = true;
 		}
 		if(k == KeyEvent.VK_LEFT && !pressing[LEFT]){
-			System.out.println("LEFT");
 			if(camera.getX() > 0)
 				camera.translate(-tileWidth/2f, 0);	
 			pressing[LEFT] = true;
@@ -349,7 +387,6 @@ public class Manager {
 		copyMap(map,novo);
 		map = novo;		
 		camera.setPosition(0, 0);
-		dimensions.setText("Map size: "+map[0].length+" x "+map.length);
 		
 		for(int i = 0; i < pressing.length; i++){
 			pressing[i] = false;
@@ -362,14 +399,82 @@ public class Manager {
 		
 	}
 	
-	
-	private void loadMap(String path){
+	private void saveMap(){
 		try{
-			File file = new File(path);
-			if(!file.exists()){
-				JOptionPane.showMessageDialog(null, "File does not exist");
+			int resp = explorer.showSaveDialog(panel);
+			File file;
+			
+			if(resp == JFileChooser.APPROVE_OPTION){
+				
+				file = explorer.getSelectedFile();
+				if(file.exists()){
+					int a = JOptionPane.showConfirmDialog(null, "Do you want to overwrite the existing file?");
+					if(a != JOptionPane.OK_OPTION){
+						JOptionPane.showMessageDialog(null, "Save cancelled");
+						return;
+					}				
+				}
+				
+				file.createNewFile();				
+				
+				PrintWriter out = new PrintWriter(file);
+				
+				String temp = map.length+"#"+map[0].length;
+				out.println(temp);
+				
+				for(int line = 0; line < map.length; line++){
+					temp = "";
+					for(int col = 0; col < map[0].length; col++){
+						temp += map[line][col];
+						if(col != map[0].length-1)temp += " ";
+					}
+					out.println(temp);					
+				}
+				out.println(""+numPlatform);
+				for(int i = 0; i < numPlatform; i++){
+					temp = platforms[i].x+" "+platforms[i].y+" "+platforms[i].width+" "+platforms[i].height+" "+platforms[i].friction;
+					out.println(temp);
+				}
+				
+				//ENEMIES PRINT
+				out.println("0");
+				out.close();
+				
+				
+				
+			}
+			else{
+				JOptionPane.showMessageDialog(null, "Could not save, problems choosing the file");
 				return;
 			}
+			
+		}
+		catch(Exception e){
+			JOptionPane.showMessageDialog(null, "Could not save");
+		}	
+		
+	}
+	
+	
+	private void loadMap(){
+		try{
+			int resp = explorer.showOpenDialog(panel);
+			File file;
+			
+			if(resp == JFileChooser.APPROVE_OPTION){
+				file = explorer.getSelectedFile();
+				String path = file.getAbsolutePath();
+				if(path.charAt(path.length()-1)!='p'|| path.charAt(path.length()-4) != '.'||
+						path.charAt(path.length()-2)!='a' || path.charAt(path.length()-3)!='m'){
+					JOptionPane.showMessageDialog(null, "Not a map file!");
+					return;
+				}
+			}
+			else{
+				JOptionPane.showMessageDialog(null, "Ok then... Loading clear map");
+				return;
+			}
+			
 			Scanner in = new Scanner(file);
 			
 			String []temp = in.nextLine().split("#");
@@ -401,6 +506,8 @@ public class Manager {
 			this.platforms = platforms;
 			this.map = map;
 			this.numPlatform = numPlatform;
+			boxWidth.setText(""+map[0].length);
+			boxHeight.setText(""+map.length);
 			
 		}
 		catch(Exception e){

@@ -2,6 +2,7 @@ package core;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 
 public class Platform {
 
@@ -9,18 +10,23 @@ public class Platform {
 	int y;
 	int width;
 	int height;
-	int restitution;
+	int friction;
 	
-	public Platform(int x,int y,int width, int height, int restitution){
+	public Platform(int x,int y,int width, int height, int friction){
 		this.x = x;
 		this.y = y;
 		this.width = width;
 		this.height = height;
-		this.restitution = restitution;
+		this.friction = friction;
 	}
 	
 	public void update(Camera camera){
 		
+	}
+	
+	public Rectangle getRect(Camera camera){
+		return new Rectangle((int)(x-camera.getX()-width/2),(int)(500-y-camera.getY()-height/2),
+				width,height);
 	}
 	
 	public void draw(Graphics2D g,Camera camera){
