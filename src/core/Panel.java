@@ -2,54 +2,60 @@ package core;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.image.BufferedImage;
 
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 @SuppressWarnings("serial")
-public class Panel extends JPanel implements Runnable {
-		
+public class Panel extends JPanel implements Runnable,KeyListener,MouseListener,MouseMotionListener {
+	
 	private Thread thread;
 	private boolean running;
 	
 	private int FPS = 60;
 	private long targetTime = 1000/FPS;
+		
+	private BufferedImage map_image;
+	private BufferedImage tiles_image;
 	
-	private Box box;
+	private Graphics2D gm;
+	private Graphics2D gt;
 	
-	private MyButton[]buttons;
-	
-	private TextBox textBox;
+	private Manager manager;
 	
 	public Panel(){
 		super();
 		
+		this.setDoubleBuffered(true);
 		this.setLayout(null);
 		
-		setPreferredSize(new Dimension(800, 600));
+		setPreferredSize(new Dimension(1120, 600));
 		
-		box = new Box(20,20,100,100);
+		map_image = new BufferedImage(780,500,BufferedImage.TYPE_INT_RGB);
 		
-		buttons = new MyButton[4];
-		buttons[0] = new MyButton(this, box, 40, 540, 100, 40, "LEFT");
-		buttons[1] = new MyButton(this, box, 160, 540, 100, 40, "DOWN");
-		buttons[2] = new MyButton(this, box, 280, 540, 100, 40, "UP");
-		buttons[3] = new MyButton(this, box, 400, 540, 100, 40, "RIGHT");
-
-		buttons[0].setSpeed(-10, 0);
-		buttons[1].setSpeed(0, 10);
-		buttons[2].setSpeed(0, -10);
-		buttons[3].setSpeed(10, 0);
+		gm = (Graphics2D)map_image.getGraphics();
+		gm.setBackground(Color.WHITE);	
+		gm.setFont(new Font("Arial",Font.BOLD, 24));
+		gm.setColor(Color.BLACK);
 		
-		JLabel label = new JLabel();
-		label.setText("Size: ");
-		label.setBounds(560,510,100,100);
-			
-		this.add(label);
+		tiles_image = new BufferedImage(240,240,BufferedImage.TYPE_INT_RGB);
+		gt = (Graphics2D)tiles_image.getGraphics();
+		gt.setBackground(Color.WHITE);	
+		gt.setFont(new Font("Arial",Font.BOLD, 24));
+		gt.setColor(Color.BLACK);
 		
-		textBox = new TextBox(this, box, 600, 540, 150, 40, ""+box.getWidth());
+		
+		
+		manager = new Manager(this);
 		
 	}
 	
@@ -57,26 +63,25 @@ public class Panel extends JPanel implements Runnable {
 		super.addNotify();
 		if(thread == null){
 			thread = new Thread(this);
+			addKeyListener(this);
+			addMouseListener(this);
+			addMouseMotionListener(this);
+			setFocusable(true);
+			requestFocus();
 			running = true;
 			thread.start();
 		}
 	}
 	
 	public void update(){
-		for(MyButton b:buttons)
-			b.update();
-		textBox.update();
+		manager.update();
 	}
 	
 	public void draw(){
-		Graphics g2 = getGraphics();
+		gm.clearRect(1, 1, 778, 498);
+		gt.clearRect(1, 1, 238, 238);
 		
-		g2.setColor(Color.WHITE);
-		g2.fillRect(10, 10, 780, 500);
-		g2.setColor(new Color(255, 0, 0));
-		g2.fillRect(box.getX(), box.getY(), box.getWidth(), box.getHeight());
-		
-		g2.dispose();
+		manager.draw(gm,gt);
 	}
 	
 	
@@ -90,6 +95,13 @@ public class Panel extends JPanel implements Runnable {
 			start = System.nanoTime();
 			update();
 			draw();
+			
+			Graphics g2 = getGraphics();
+					
+			g2.drawImage(map_image,10,10,780,500,null);
+			g2.drawImage(tiles_image, 800, 268, 240, 240, null);
+			
+			g2.dispose();
 			
 			elapsedTime= System.nanoTime()-start;
 			wait = targetTime-elapsedTime/1000000;
@@ -106,6 +118,59 @@ public class Panel extends JPanel implements Runnable {
 		}
 		
 		
+	}
+	
+
+	@Override
+	public void keyPressed(KeyEvent e) {
+		manager.keyPressed(e.getKeyCode());
+		
+	}
+
+	@Override
+	public void keyReleased(KeyEvent e) {
+		manager.keyReleased(e.getKeyCode());
+	}
+
+	@Override
+	public void keyTyped(KeyEvent e) {
+	
+	}
+	
+	
+	
+	@Override
+	public void mouseClicked(MouseEvent e) {
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent e) {
+
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		manager.mousePressed(e);
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		manager.mouseReleased(e);
+	}
+
+	@Override
+	public void mouseDragged(MouseEvent e) {
+		manager.mouseDragged(e);
+	}
+
+	@Override
+	public void mouseMoved(MouseEvent e) {
+		manager.mouseMoved(e);		
 	}
 
 

@@ -11,6 +11,7 @@ public class Core {
 		frame.setVisible(true);
 		frame.setResizable(false);
 		frame.setContentPane(new Panel());
+		frame.setTitle("Paulo map editor");
 		frame.pack();
 		
 		
