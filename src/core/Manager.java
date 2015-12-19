@@ -9,6 +9,7 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 import javax.swing.JButton;
@@ -19,8 +20,7 @@ import javax.swing.JPanel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class Manager {
-	private final int LEFT = 0,RIGHT = 1,UP = 2,DOWN = 3,MOUSE = 4;
-	private final int CREATEBOX = 0,DELETEBOX = 1;
+	private final int LEFT = 0,RIGHT = 1,UP = 2,DOWN = 3,MOUSE = 4, A = 5, S = 6,D = 7, W = 8;
 	
 	private boolean[] pressing;
 	public boolean pressedEnter;
@@ -29,7 +29,7 @@ public class Manager {
 	
 	public int [][]map;
 	
-	private Platform[] platforms;
+	private ArrayList<Platform> platforms;
 	
 	private int boxtool;
 	
@@ -61,7 +61,8 @@ public class Manager {
 	private JButton createbox;
 	private JButton deletebox;
 	private JButton movebox;
-	
+	private JButton changebox;
+	private JButton selectbox;
 	
 	private JButton up;
 	private JButton down;
@@ -125,7 +126,7 @@ public class Manager {
 		x.setBounds(945,550,40,30);
 		panel.add(x);
 		
-		pressing = new boolean[5];
+		pressing = new boolean[9];
 		for(int i = 0; i < pressing.length; i++)
 			pressing[i] = false;
 		
@@ -146,7 +147,7 @@ public class Manager {
 		panel.add(boxMode);
 		
 		numPlatform = 0;
-		platforms = new Platform[numPlatform];
+		platforms = new ArrayList<Platform>();
 		
 		positiony = 0;
 		
@@ -158,26 +159,31 @@ public class Manager {
 		panel.add(up);
 		panel.add(down);
 		
-		boxtool = -1;
+		boxtool = 3;
 		
 		createbox = new JButton("Create Box");
 		deletebox = new JButton("Delete Box");
 		movebox = new JButton("Move Box");
+		changebox = new JButton("Define Box");
+		selectbox = new JButton("Select Box");
 		createbox.setBounds(820, 80, 120,30);
 		deletebox.setBounds(975, 80, 120,30);
 		movebox.setBounds(820, 125, 120,30);
-
+		changebox.setBounds(975, 125, 120,30);
+		selectbox.setBounds(820, 170, 120,30);
 		
 		panel.add(createbox);
 		panel.add(deletebox);
 		panel.add(movebox);
+		panel.add(changebox);
+		panel.add(selectbox);
 		
 		temp = new JLabel("Platforms");
 		temp.setBounds(820,40,500,50);
 		panel.add(temp);
 		
 		temp = new JLabel("___________________________________________________");
-		temp.setBounds(800,140,500,50);
+		temp.setBounds(800,180,500,50);
 		panel.add(temp);
 		
 		
@@ -211,6 +217,8 @@ public class Manager {
 		if(createbox.getModel().isPressed())boxtool = 0;
 		if(deletebox.getModel().isPressed())boxtool = 1;
 		if(movebox.getModel().isPressed())boxtool = -1;
+		if(changebox.getModel().isPressed())boxtool = 2;
+		if(selectbox.getModel().isPressed())boxtool = 3;
 		
 		for(Platform p:platforms)p.update(camera);
 		
@@ -234,26 +242,113 @@ public class Manager {
 					changeTile(x/tileWidth,y/tileHeight);
 			}
 			else if(showPlatforms){
-				if(boxtool == -1){
-					System.out.println("PRESSING");
-					if(selectedPlatform!=null){
-						if(!selectedPlatform.getRect(camera).intersects(new Rectangle(mouseMapPos().x-2, mouseMapPos().y-2, 4, 4))){
-							selectedPlatform = null;
-						}
-					}
-					if(selectedPlatform == null){
-						for(Platform p:platforms){
-							System.out.println("X: "+p.getRect(camera).x+" MX: "+mouseMapPos().x);
-							if(p.getRect(camera).intersects(new Rectangle(mouseMapPos().x-2, mouseMapPos().y-2, 4, 4))){
-								selectedPlatform = p;
-								System.out.println(p.x);
-								break;
-							}
+				panel.requestFocus();
+
+				if(selectedPlatform == null){
+					Rectangle m = new Rectangle(mouseMapPos().x-2-(int)camera.getX(),
+							500-mouseMapPos().y-2-(int)camera.getY(),4,4);
+					for(Platform p:platforms){
+						if(p.getRect(camera).intersects(m)){
+							selectedPlatform = p;
+							System.out.println("YUP");
+							break;
 						}
 					}
 				}
 				
-				
+				if(boxtool == -1){
+					if(selectedPlatform != null){
+						selectedPlatform.x = mouseMapPos().x;
+						selectedPlatform.y = mouseMapPos().y;
+					}
+				}
+				if(boxtool == 2){
+					if(selectedPlatform != null){
+						String resp = "";
+						try{
+							resp = JOptionPane.showInputDialog("Current platform values",(int)(selectedPlatform.x-selectedPlatform.width/2)+"x"+
+						(int)(selectedPlatform.y - selectedPlatform.height/2)+"x"+selectedPlatform.width+"x"+selectedPlatform.height);
+						}catch(Exception e){
+							selectedPlatform = null;
+							return;
+						}
+						if(resp == null){
+							selectedPlatform = null;
+							return;
+						}
+						if(resp.length() < 7){
+							selectedPlatform = null;
+							return;
+						}
+						try{
+							String []temp = resp.split("x");
+							if(temp.length < 4)return;
+							int w =  Integer.parseInt(temp[2]);
+							int h =  Integer.parseInt(temp[3]);
+
+							int tx = (int) (Integer.parseInt(temp[0])+w/2);
+							int ty = (int)(Integer.parseInt(temp[1])+h/2);
+							
+							if(tx < 0 || ty < 0 || tx > (map[0].length-1)*tileWidth || ty > (map.length-1)*tileHeight||
+									w < tileWidth || h < tileHeight || w > (map[0].length-1)*tileWidth ||
+									 h > (map.length-1)*tileHeight){
+								return;
+							}
+							
+							selectedPlatform.x = tx;
+							selectedPlatform.y = ty;
+							selectedPlatform.width = w;
+							selectedPlatform.height = h;
+							
+							
+						}catch(Exception e){
+							selectedPlatform = null;
+							return;
+						}
+						
+					}	
+				}
+				if(boxtool == 0){
+					String resp = "";
+					try{
+						resp = JOptionPane.showInputDialog("New tile dimensions",tileWidth+"x"+tileHeight);
+					}catch(Exception e){
+						boxtool = 3;
+						return;
+					}
+					
+					try{
+						String []temp = resp.split("x");
+						if(temp.length < 2)return;
+						int w =  Integer.parseInt(temp[0]);
+						int h =  Integer.parseInt(temp[1]);
+						
+						if(w < tileWidth || h < tileHeight || w > (map[0].length-1)*tileWidth ||
+								 h > (map.length-1)*tileHeight){
+							boxtool = 3;
+							return;
+						}
+						
+						Platform p = new Platform(mouseMapPos().x, mouseMapPos().y, w, h, 1);
+						platforms.add(p);
+						numPlatform++;
+						selectedPlatform = p;
+						selectedPlatform.width = w;
+						selectedPlatform.height = h;
+						
+						
+					}catch(Exception e){
+						selectedPlatform = null;
+						return;
+					}
+				}
+				if(boxtool == 1){
+					if(selectedPlatform != null){
+						platforms.remove(selectedPlatform);
+						selectedPlatform = null;
+						numPlatform --;
+					}
+				}
 			}
 		}
 		
@@ -290,29 +385,34 @@ public class Manager {
 		if(showPlatforms)
 			for(Platform p:platforms)p.draw(gm,camera);
 		
-		
+		gm.setColor(Color.BLACK);
+		gm.fillRect(mouseMapPos().x-10-(int)camera.getX(),500-mouseMapPos().y+2-(int)camera.getY(),6,2);
+		gm.fillRect(mouseMapPos().x+8-(int)camera.getX(),500-mouseMapPos().y+2-(int)camera.getY(),6,2);
+		gm.fillRect(mouseMapPos().x-(int)camera.getX(),500-mouseMapPos().y+10-(int)camera.getY(),2,6);
+		gm.fillRect(mouseMapPos().x-(int)camera.getX(),500-mouseMapPos().y-10-(int)camera.getY(),2,6);
+
 	}
 	
 	public void keyPressed(int k) {
-		if(k == KeyEvent.VK_RIGHT && !pressing[RIGHT]){
+		if(k == KeyEvent.VK_D && !pressing[D]){
 			if(camera.getX() < tileWidth * (map[0].length-1) - camera.getW())
 				camera.translate(tileWidth/2f, 0);	
-			pressing[RIGHT] = true;
+			pressing[D] = true;
 		}
-		if(k == KeyEvent.VK_LEFT && !pressing[LEFT]){
+		if(k == KeyEvent.VK_A && !pressing[A]){
 			if(camera.getX() > 0)
 				camera.translate(-tileWidth/2f, 0);	
-			pressing[LEFT] = true;
+			pressing[A] = true;
 		}
-		if(k == KeyEvent.VK_UP && !pressing[UP]){
+		if(k == KeyEvent.VK_W && !pressing[W]){
 			if(camera.getY() > -tileHeight*(map.length-1)+camera.getH())
 			camera.translate(0,-tileWidth/2f);	
-			pressing[UP] = true;
+			pressing[W] = true;
 		}
-		if(k == KeyEvent.VK_DOWN && !pressing[DOWN]){
+		if(k == KeyEvent.VK_S && !pressing[S]){
 			if(camera.getY() < 0)
 				camera.translate(0, tileWidth/2f);
-			pressing[DOWN] = true;
+			pressing[S] = true;
 		}
 		if(k == KeyEvent.VK_ENTER && !pressedEnter){
 			pressedEnter = true;
@@ -321,16 +421,79 @@ public class Manager {
 			ribbon = 0;
 		}
 		
+		if(k == KeyEvent.VK_LEFT && !pressing[LEFT]){
+			pressing[LEFT] = true;
+			if(selectedPlatform != null){
+				if((selectedPlatform.x-selectedPlatform.width/2)%tileWidth != 0){
+					selectedPlatform.x -= (selectedPlatform.x-selectedPlatform.width/2)%tileWidth;
+				}
+				else{
+					selectedPlatform.x -= tileWidth;
+				}
+			}
+		}
+		if(k == KeyEvent.VK_RIGHT && !pressing[RIGHT]){
+			pressing[RIGHT] = true;	
+			if(selectedPlatform != null){
+				if((selectedPlatform.x-selectedPlatform.width/2)%tileWidth != 0){
+					selectedPlatform.x -= (selectedPlatform.x-selectedPlatform.width/2)%tileWidth;
+				}
+				else{
+					selectedPlatform.x += tileWidth;
+				}
+			}
+			//selectedPlatform.x = 0;
+		}
+		if(k == KeyEvent.VK_UP && !pressing[UP]){
+			pressing[UP] = true;
+			
+			if(selectedPlatform != null){
+				if((selectedPlatform.y-selectedPlatform.height/2)%tileHeight != 0){
+					selectedPlatform.y -= (selectedPlatform.y-selectedPlatform.height/2)%tileHeight;
+				}
+				else{
+					selectedPlatform.y += tileHeight;
+				}
+			}
+			
+		}
+		if(k == KeyEvent.VK_DOWN && !pressing[DOWN]){
+			pressing[DOWN] = true;
+			if(selectedPlatform != null){
+				if((selectedPlatform.y-selectedPlatform.height/2)%tileHeight != 0){
+					selectedPlatform.y -= (selectedPlatform.y-selectedPlatform.height/2)%tileHeight;
+				}
+				else{
+					selectedPlatform.y -= tileHeight;
+				}
+			}
+		}
+		
 	}
 	
 	
 	
 	public void keyReleased(int k) {
-		if(k == KeyEvent.VK_RIGHT && pressing[RIGHT]){
-			pressing[RIGHT] = false;
+		if(k == KeyEvent.VK_D && pressing[D]){
+			pressing[D] = false;
+		}
+		if(k == KeyEvent.VK_A && pressing[A]){
+			pressing[A] = false;
+		}
+		if(k == KeyEvent.VK_W && pressing[W]){
+			pressing[W] = false;
+		}
+		if(k == KeyEvent.VK_S && pressing[S]){
+			pressing[S] = false;
+		}
+		if(k == KeyEvent.VK_ENTER && pressedEnter){
+			pressedEnter = false;
 		}
 		if(k == KeyEvent.VK_LEFT && pressing[LEFT]){
 			pressing[LEFT] = false;
+		}
+		if(k == KeyEvent.VK_RIGHT && pressing[RIGHT]){
+			pressing[RIGHT] = false;
 		}
 		if(k == KeyEvent.VK_UP && pressing[UP]){
 			pressing[UP] = false;
@@ -338,13 +501,12 @@ public class Manager {
 		if(k == KeyEvent.VK_DOWN && pressing[DOWN]){
 			pressing[DOWN] = false;
 		}
-		if(k == KeyEvent.VK_ENTER && pressedEnter){
-			pressedEnter = false;
-		}
+		
 		
 	}
 	
 	public void mousePressed(MouseEvent e) {
+		if(!pressing[MOUSE])selectedPlatform = null;
 		pressing[MOUSE] = true;	
 		
 	}
@@ -371,13 +533,8 @@ public class Manager {
 	public void copyMap(int [][]old,int[][]newMap){
 		for(int line = 0; line < newMap.length; line++){
 			for(int col = 0; col < newMap[0].length; col++){
-				newMap[line][col] = -1;
-			}
-		}
-		
-		for(int line = 0; line < old.length; line++){
-			for(int col = 0; col < old[0].length; col++){
-				newMap[line][col] = old[line][col];
+				if(line < old.length && col < old[0].length)newMap[line][col] = old[line][col];
+				else newMap[line][col] = -1;
 			}
 		}
 	}
@@ -431,8 +588,8 @@ public class Manager {
 					out.println(temp);					
 				}
 				out.println(""+numPlatform);
-				for(int i = 0; i < numPlatform; i++){
-					temp = platforms[i].x+" "+platforms[i].y+" "+platforms[i].width+" "+platforms[i].height+" "+platforms[i].friction;
+				for(Platform p:platforms){
+					temp = p.x+" "+p.y+" "+p.width+" "+p.height+" "+p.friction;
 					out.println(temp);
 				}
 				
@@ -492,12 +649,12 @@ public class Manager {
 			}
 			
 			int numPlatform = Integer.parseInt(in.nextLine());
-			Platform [] platforms = new Platform[numPlatform];
+			ArrayList<Platform>platforms = new ArrayList<Platform>();
 			
 			for(int i = 0; i < numPlatform; i++){
 				temp = in.nextLine().split(" ");
-				platforms[i] = new Platform(Integer.parseInt(temp[0]), Integer.parseInt(temp[1]),
-						Integer.parseInt(temp[2]), Integer.parseInt(temp[3]), Integer.parseInt(temp[4]));
+				platforms.add(new Platform(Integer.parseInt(temp[0]), Integer.parseInt(temp[1]),
+						Integer.parseInt(temp[2]), Integer.parseInt(temp[3]), Integer.parseInt(temp[4])));
 			}
 			
 			

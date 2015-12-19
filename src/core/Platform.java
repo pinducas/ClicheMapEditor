@@ -30,7 +30,7 @@ public class Platform {
 	}
 	
 	public void draw(Graphics2D g,Camera camera){
-		g.setColor(new Color(255, 0, 0, 50));
+		g.setColor(new Color(255, 0, 0, 150));
 		
 		g.fillRect((int)(x-camera.getX()-width/2), (int)(500-y-camera.getY()-height/2), width, height);
 		
