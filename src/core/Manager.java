@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Window;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -24,6 +25,13 @@ public class Manager {
 	
 	private boolean[] pressing;
 	public boolean pressedEnter;
+	private int creation;
+	private boolean changedMode;
+	
+	private int newWidth;
+	private int newHeight;
+	private int newX;
+	private int newY;
 	
 	private boolean showPlatforms;
 	
@@ -54,8 +62,7 @@ public class Manager {
 	
 	private JPanel panel;
 	
-	private JButton tileMode;
-	private JButton boxMode;
+	private JButton changeMode;
 	private JButton save;
 	private JButton load;
 	private JButton createbox;
@@ -74,6 +81,8 @@ public class Manager {
 	
 	private Platform selectedPlatform;
 	
+	private JLabel currentTool;
+	private JLabel mode;
 	
 	public Manager(JPanel panel){
 		this.panel = panel;
@@ -138,13 +147,9 @@ public class Manager {
 		dimensions.setBounds(820,545,250,40);
 		panel.add(dimensions);
 		
-		tileMode = new JButton("Tile Mode");
-		tileMode.setBounds(10,540,130,40);
-		panel.add(tileMode);
-		
-		boxMode = new JButton("Box Mode");
-		boxMode.setBounds(160,540,130,40);
-		panel.add(boxMode);
+		changeMode = new JButton("To Box Mode");
+		changeMode.setBounds(10,540,140,40);
+		panel.add(changeMode);
 		
 		numPlatform = 0;
 		platforms = new ArrayList<Platform>();
@@ -186,6 +191,12 @@ public class Manager {
 		temp.setBounds(800,180,500,50);
 		panel.add(temp);
 		
+		currentTool = new JLabel("Current Tool: Delete Tile");
+		currentTool.setBounds(800, 205, 520, 50);
+		panel.add(currentTool);
+		mode = new JLabel("Mode: Tile");
+		mode.setBounds(800, 225, 520, 50);
+		panel.add(mode);
 		
 		mousePosition = new Point(0, 0);
 		
@@ -200,18 +211,41 @@ public class Manager {
 		
 		selectedPlatform = null;
 		
+		creation = 0;
+		
+		newWidth = 0;
+		newHeight = 0;
+		newX = 0;
+		newY = 0;
+		
 		if(resp == 2)System.exit(0);
 		if(resp == 1){
 			loadMap();		
 		}
+		changedMode = false;
 		
 	}
 	
 	public void update(){
 		if(load.getModel().isPressed())loadMap();
 		if(save.getModel().isPressed())saveMap();
-		if(boxMode.getModel().isPressed() && !showPlatforms)showPlatforms = true;
-		if(tileMode.getModel().isArmed() && showPlatforms)showPlatforms = false;
+		if(changeMode.getModel().isPressed() && !changedMode){
+			showPlatforms = !showPlatforms;
+			if(showPlatforms){
+				mode.setText("Mode: Platforms");
+				changeMode.setText("To Tile Mode");
+				currentTool.setText("Current Tool: Select Platform");
+				boxtool = 3;
+			}
+			else {
+				mode.setText("Mode: Tiles");
+				changeMode.setText("To Box Mode");
+				currentTool.setText("Current Tool: Delete Tile");
+				ribbon = 0;
+			}
+			changedMode = true;
+		}
+		if(!changeMode.getModel().isPressed())changedMode = false;
 		if(up.getModel().isPressed() && positiony > 0)positiony -= 10;
 		if(down.getModel().isPressed())positiony += 10;
 		if(createbox.getModel().isPressed())boxtool = 0;
@@ -223,11 +257,39 @@ public class Manager {
 		for(Platform p:platforms)p.update(camera);
 		
 		
+		if(!showPlatforms){
+			if(ribbon == 0){
+				currentTool.setText("Current Tool: Delete Tile");
+			}
+			else{
+				currentTool.setText("Current Tool: Drawing Tile "+ribbon);
+			}
+		}
+		else{
+			switch(boxtool){
+				case -1:
+					currentTool.setText("Current Tool: Move Platform");
+					break;
+				case 0:
+					currentTool.setText("Current Tool: Create Platform");
+					break;
+				case 1:
+					currentTool.setText("Current Tool: Delete Platform");
+					break;
+				case 2:
+					currentTool.setText("Current Tool: Platform Properties");
+					break;
+				case 3:
+					currentTool.setText("Current Tool: Select Platform");
+					break;
+			}
+		}
 		
 		
 		if(pressing[MOUSE]){
 			int x,y;
-			if(mousePosition.x > 800 && mousePosition.y> 268){		
+			if(mousePosition.x > 800 && mousePosition.y> 268){
+				boxtool = 3;
 				x = (int)(mousePosition.x-800);
 				y = (int)(mousePosition.y-268);
 				if(x > 0 && x < 240 && y > 0 && y < 240)
@@ -250,19 +312,20 @@ public class Manager {
 					for(Platform p:platforms){
 						if(p.getRect(camera).intersects(m)){
 							selectedPlatform = p;
-							System.out.println("YUP");
 							break;
 						}
 					}
 				}
 				
 				if(boxtool == -1){
+					creation = 0;
 					if(selectedPlatform != null){
 						selectedPlatform.x = mouseMapPos().x;
 						selectedPlatform.y = mouseMapPos().y;
 					}
 				}
 				if(boxtool == 2){
+					creation = 0;
 					if(selectedPlatform != null){
 						String resp = "";
 						try{
@@ -270,14 +333,17 @@ public class Manager {
 						(int)(selectedPlatform.y - selectedPlatform.height/2)+"x"+selectedPlatform.width+"x"+selectedPlatform.height);
 						}catch(Exception e){
 							selectedPlatform = null;
+							boxtool = 3;
 							return;
 						}
 						if(resp == null){
 							selectedPlatform = null;
+							boxtool = 3;
 							return;
 						}
 						if(resp.length() < 7){
 							selectedPlatform = null;
+							boxtool = 3;
 							return;
 						}
 						try{
@@ -292,6 +358,7 @@ public class Manager {
 							if(tx < 0 || ty < 0 || tx > (map[0].length-1)*tileWidth || ty > (map.length-1)*tileHeight||
 									w < tileWidth || h < tileHeight || w > (map[0].length-1)*tileWidth ||
 									 h > (map.length-1)*tileHeight){
+								boxtool = 3;
 								return;
 							}
 							
@@ -300,59 +367,103 @@ public class Manager {
 							selectedPlatform.width = w;
 							selectedPlatform.height = h;
 							
-							
+							boxtool = 3;
 						}catch(Exception e){
 							selectedPlatform = null;
+							boxtool = 3;
 							return;
 						}
 						
 					}	
 				}
 				if(boxtool == 0){
-					String resp = "";
-					try{
-						resp = JOptionPane.showInputDialog("New tile dimensions",tileWidth+"x"+tileHeight);
-					}catch(Exception e){
-						boxtool = 3;
-						return;
-					}
-					
-					try{
-						String []temp = resp.split("x");
-						if(temp.length < 2)return;
-						int w =  Integer.parseInt(temp[0]);
-						int h =  Integer.parseInt(temp[1]);
-						
-						if(w < tileWidth || h < tileHeight || w > (map[0].length-1)*tileWidth ||
-								 h > (map.length-1)*tileHeight){
-							boxtool = 3;
-							return;
-						}
-						
-						Platform p = new Platform(mouseMapPos().x, mouseMapPos().y, w, h, 1);
-						platforms.add(p);
-						numPlatform++;
-						selectedPlatform = p;
-						selectedPlatform.width = w;
-						selectedPlatform.height = h;
-						
-						
-					}catch(Exception e){
-						selectedPlatform = null;
-						return;
-					}
+					if(creation == 0){
+						creation = 1;
+						newX = mouseMapPos().x;
+						newY = mouseMapPos().y;
+					}					
 				}
 				if(boxtool == 1){
+					creation = 0;
 					if(selectedPlatform != null){
 						platforms.remove(selectedPlatform);
 						selectedPlatform = null;
 						numPlatform --;
+						boxtool = 3;
 					}
-				}
+				}				
 			}
 		}
 		
 		
+		if(boxtool == 0){
+			if(creation == 2){
+				String resp = "";
+				try{
+					resp = JOptionPane.showInputDialog("New tile dimensions",tileWidth+"x"+tileHeight);
+				}catch(Exception e){
+					boxtool = 3;
+					creation = 0;
+					return;
+				}
+				
+				try{
+					String []temp = resp.split("x");
+					if(temp.length < 2)return;
+					int w =  Integer.parseInt(temp[0]);
+					int h =  Integer.parseInt(temp[1]);
+					
+					if(w < tileWidth || h < tileHeight || w > (map[0].length-1)*tileWidth ||
+							 h > (map.length-1)*tileHeight){
+						boxtool = 3;
+						return;
+					}
+					
+					Platform p = new Platform(mouseMapPos().x, mouseMapPos().y, w, h, 1);
+					platforms.add(p);
+					numPlatform++;
+					selectedPlatform = p;
+					selectedPlatform.width = w;
+					selectedPlatform.height = h;
+					boxtool = 3;
+				}catch(Exception e){
+					selectedPlatform = null;
+					boxtool = 3;
+					creation = 0;
+					return;
+				}
+			}
+			if(creation == 3){
+				
+				int tempX = newX;
+				int tempY = newY;
+				int tempW = newWidth;
+				int tempH = newHeight;
+				
+				if(newWidth < 0){
+					tempX += newWidth;
+					tempW = -tempW;
+				}
+				if(newHeight < 0){
+					tempY -= newHeight;
+					tempH = -tempH;
+				}
+				
+				tempX += (int)(tempW/2);
+				tempY -= (int)(tempH/2);
+				
+				Platform p = new Platform(tempX,tempY,tempW,tempH,1);
+				platforms.add(p);
+				numPlatform++;
+				newX = 0;
+				newY = 0;
+				newWidth = 0;
+				newHeight= 0;
+				creation = 0;
+				boxtool = 3;
+			}
+			
+		}
 		
 		boxWidth.update();
 		boxHeight.update();
@@ -390,6 +501,32 @@ public class Manager {
 		gm.fillRect(mouseMapPos().x+8-(int)camera.getX(),500-mouseMapPos().y+2-(int)camera.getY(),6,2);
 		gm.fillRect(mouseMapPos().x-(int)camera.getX(),500-mouseMapPos().y+10-(int)camera.getY(),2,6);
 		gm.fillRect(mouseMapPos().x-(int)camera.getX(),500-mouseMapPos().y-10-(int)camera.getY(),2,6);
+		
+		
+		if(creation == 1){
+			gm.setColor(new Color(0,254,0,100));
+			
+			System.out.println("X: "+newX+" newY: "+newY+" newW: "+newWidth+" newH: "+newHeight);
+			
+			int tempX = newX - (int)camera.getX();
+			int tempY = 500 - newY - (int)camera.getY();
+			int tempW = newWidth;
+			int tempH = newHeight;
+			
+			if(newWidth < 0){
+				tempX += newWidth;
+				tempW = -tempW;
+			}
+			if(newHeight < 0){
+				tempY += newHeight;
+				tempH = -tempH;
+			}
+			
+			gm.fillRect(tempX,tempY,tempW,tempH);
+			
+			
+			gm.setColor(Color.WHITE);
+		}
 
 	}
 	
@@ -419,7 +556,10 @@ public class Manager {
 		}
 		if(k == KeyEvent.VK_DELETE){
 			ribbon = 0;
+			boxtool = 1;
 		}
+		
+		
 		
 		if(k == KeyEvent.VK_LEFT && !pressing[LEFT]){
 			pressing[LEFT] = true;
@@ -513,7 +653,14 @@ public class Manager {
 
 	public void mouseReleased(MouseEvent e) {
 		pressing[MOUSE] = false;
+		if(creation == 1){
+			if((newWidth > -72 && newWidth < 72) || (newHeight > -72 && newHeight < 72))
+				creation = 2;
+			else
+				creation = 3;		
+		}
 	}
+	
 	
 	public void mouseMoved(MouseEvent e){
 		mousePosition.x = e.getX();
@@ -523,6 +670,12 @@ public class Manager {
 	public void mouseDragged(MouseEvent e){
 		mousePosition.x = e.getX();
 		mousePosition.y = e.getY();
+		
+		if(creation == 1){
+			newWidth = mouseMapPos().x - newX;
+			newHeight = newY-mouseMapPos().y ;
+		}
+		
 	}
 	
 	public void changeTile(int x,int y){
