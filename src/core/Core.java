@@ -11,7 +11,7 @@ public class Core {
 		frame.setVisible(true);
 		frame.setResizable(false);
 		frame.setContentPane(new Panel());
-		frame.setTitle("PenisNo Pau map editor");
+		frame.setTitle("Super Paulo Map Editor");
 		frame.pack();
 		
 		

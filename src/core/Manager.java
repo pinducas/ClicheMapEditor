@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.Window;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -18,6 +17,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class Manager {
@@ -83,6 +83,11 @@ public class Manager {
 	
 	private JLabel currentTool;
 	private JLabel mode;
+	private JLabel widthResult;
+	private JLabel heightResult;
+	
+	private JTextField widthMult;
+	private JTextField heightMult;
 	
 	public Manager(JPanel panel){
 		this.panel = panel;
@@ -127,12 +132,12 @@ public class Manager {
 		
 		
 		
-		boxWidth = new SizeBox(panel, this,900, 550, 40,30, ""+map[0].length,0);
-		boxHeight = new SizeBox(panel, this,960, 550, 40,30, ""+map.length,1);
+		boxWidth = new SizeBox(panel, this,1000, 545, 40,30, ""+map[0].length,0);
+		boxHeight = new SizeBox(panel, this,1060, 545, 40,30, ""+map.length,1);
 		
 		
 		x = new JLabel("X");
-		x.setBounds(945,550,40,30);
+		x.setBounds(1044,545,40,30);
 		panel.add(x);
 		
 		pressing = new boolean[9];
@@ -144,7 +149,7 @@ public class Manager {
 		ribbon = -1;
 		
 		dimensions = new JLabel("Map size ");
-		dimensions.setBounds(820,545,250,40);
+		dimensions.setBounds(920,540,250,40);
 		panel.add(dimensions);
 		
 		changeMode = new JButton("To Box Mode");
@@ -197,6 +202,24 @@ public class Manager {
 		mode = new JLabel("Mode: Tile");
 		mode.setBounds(800, 225, 520, 50);
 		panel.add(mode);
+		
+		widthResult = new JLabel("X Tile Width = 0");
+		heightResult = new JLabel("X Tile Height = 0");
+		
+		widthResult.setBounds(664, 510, 520, 50);
+		heightResult.setBounds(664, 550, 520, 50);
+
+		widthMult = new JTextField("0");
+		heightMult = new JTextField("0");
+		
+		widthMult.setBounds(620, 520, 40, 30);
+		heightMult.setBounds(620, 560, 40, 30);
+
+		
+		panel.add(widthMult);
+		panel.add(heightMult);
+		panel.add(widthResult);
+		panel.add(heightResult);
 		
 		mousePosition = new Point(0, 0);
 		
@@ -356,7 +379,7 @@ public class Manager {
 							int ty = (int)(Integer.parseInt(temp[1])+h/2);
 							
 							if(tx < 0 || ty < 0 || tx > (map[0].length-1)*tileWidth || ty > (map.length-1)*tileHeight||
-									w < tileWidth || h < tileHeight || w > (map[0].length-1)*tileWidth ||
+									 w > (map[0].length-1)*tileWidth ||
 									 h > (map.length-1)*tileHeight){
 								boxtool = 3;
 								return;
@@ -413,7 +436,7 @@ public class Manager {
 					int w =  Integer.parseInt(temp[0]);
 					int h =  Integer.parseInt(temp[1]);
 					
-					if(w < tileWidth || h < tileHeight || w > (map[0].length-1)*tileWidth ||
+					if(w > (map[0].length-1)*tileWidth ||
 							 h > (map.length-1)*tileHeight){
 						boxtool = 3;
 						return;
@@ -464,6 +487,34 @@ public class Manager {
 			}
 			
 		}
+		
+		if(widthMult.getText() != null){
+			if(widthMult.getText() != "0"){
+				int value = 0;
+				try{
+					value = Integer.parseInt(widthMult.getText());
+					if(value >=0 && value <= 100){
+						widthResult.setText("X Tile Width = "+(value*tileWidth));
+					}
+				}catch(Exception e){
+					
+				}
+			}			
+		}
+		if(heightMult.getText() != null){
+			if(heightMult.getText() != "0"){
+				int value = 0;
+				try{
+					value = Integer.parseInt(heightMult.getText());
+					if(value >=0 && value <= 100){
+						heightResult.setText("X Tile Height = "+(value*tileHeight));
+					}
+				}catch(Exception e){
+					
+				}
+			}			
+		}
+		
 		
 		boxWidth.update();
 		boxHeight.update();
@@ -654,7 +705,7 @@ public class Manager {
 	public void mouseReleased(MouseEvent e) {
 		pressing[MOUSE] = false;
 		if(creation == 1){
-			if((newWidth > -72 && newWidth < 72) || (newHeight > -72 && newHeight < 72))
+			if((newWidth > -tileWidth/5 && newWidth < tileWidth/5) || (newHeight > -tileHeight/5 && newHeight < tileHeight/5))
 				creation = 2;
 			else
 				creation = 3;		
