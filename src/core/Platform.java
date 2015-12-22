@@ -11,13 +11,19 @@ public class Platform {
 	int width;
 	int height;
 	int friction;
+	int id;
 	
-	public Platform(int x,int y,int width, int height, int friction){
+	public Platform(int x,int y,int width, int height, int friction,int id){
 		this.x = x;
 		this.y = y;
 		this.width = width;
 		this.height = height;
 		this.friction = friction;
+		this.id = id;
+	}
+	
+	public int getId(){
+		return id;
 	}
 	
 	public void update(Camera camera){
