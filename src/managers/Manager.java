@@ -338,6 +338,15 @@ public class Manager {
 						newY = mouseMapPos().y;
 					}
 				}
+				else if(boxtool == 5){
+					creation = 0;
+					if(selectedLight != null){
+						control_z.add("DeleteL "+selectedLight.x+" "+selectedLight.y+" "+selectedLight.radius+" "+selectedLight.color.getRed()+" "+selectedLight.color.getGreen()+" "+selectedLight.color.getBlue());
+						pointLights.remove(selectedLight);
+						selectedLight = null;
+						boxtool = -1;
+					}
+				}	
 				
 				else if(boxtool == -1){
 					creation = 0;
@@ -709,6 +718,27 @@ public class Manager {
 						Platform p = new Platform(x, y, w, h, 1, numPlatform);
 						numPlatform++;
 						platforms.add(p);
+					}
+					else if(temp[0].equals("DeleteL")){
+						int x = Integer.parseInt(temp[1]);
+						int y = Integer.parseInt(temp[2]);
+						int radius = Integer.parseInt(temp[3]);
+						Color c = new Color(Integer.parseInt(temp[4]),Integer.parseInt(temp[5]),Integer.parseInt(temp[6]));
+						PointLight p = new PointLight(x, y, radius, numLight,c);
+						numLight++;
+						pointLights.add(p);
+					}
+					else if(temp[0].equals("CreateL")){
+						PointLight a = null;
+						int id = Integer.parseInt(temp[1]);
+						for(PointLight p:pointLights){
+							if(p.id == id){
+								a = p;
+								break;
+							}
+						}						
+						pointLights.remove(a);
+						
 					}
 					
 				}
