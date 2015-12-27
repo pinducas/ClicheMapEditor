@@ -243,8 +243,10 @@ public class Manager {
 			int x = mouseMapPos().x;
 			int y = mouseMapPos().y;
 			if(x >= 0 && y>=0 && x < camera.getX()+camera.getW()-10 && y< -camera.getY()+camera.getH()-10)
-				if(map[y/tileHeight][x/tileWidth] != ribbon)
+				if(map[y/tileHeight][x/tileWidth] != ribbon){
 					copyRibbon(x/tileWidth,y/tileHeight);
+					positiony = map[y/tileHeight][x/tileWidth]/2 * 120;
+				}
 		}
 		
 		if(!showPlatforms){
@@ -1169,6 +1171,8 @@ public class Manager {
 	public void defaultConfig(){
 		tileSpeed = 20;
 		cursorColor = new Color(0,0,255,100);	
+		positiony = 0;
+		camera.setPosition(0, 0);
 	}
 	
 }

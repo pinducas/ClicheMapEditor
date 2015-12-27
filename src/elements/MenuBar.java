@@ -17,8 +17,9 @@ import managers.Manager;
 @SuppressWarnings("serial")
 public class MenuBar extends JMenuBar implements ActionListener{
 	
-	private final int FILE = 0, OPTION = 1;
-	private final int NEWMAP = 0, SAVEMAP = 1, LOADMAP = 2, CHANGECOLOR = 3, TILESPEED = 4;
+	private final int FILE = 0, OPTION = 1,HELP = 2;
+	private final int NEWMAP = 0, SAVEMAP = 1, LOADMAP = 2, CHANGECOLOR = 3, TILESPEED = 4,ABOUT = 5,
+			RESET= 6;
 	
 	private Manager manager;
 	
@@ -34,8 +35,8 @@ public class MenuBar extends JMenuBar implements ActionListener{
 	public MenuBar(Manager manager,Panel panel){
 		this.manager = manager;
 		
-		menu = new JMenu[2];
-		menuItem = new JMenuItem[5];
+		menu = new JMenu[3];
+		menuItem = new JMenuItem[7];
 		
 		menu[FILE] = new JMenu("File");
 		menu[FILE].setMnemonic(KeyEvent.VK_F1);
@@ -47,20 +48,25 @@ public class MenuBar extends JMenuBar implements ActionListener{
 		menu[OPTION].getAccessibleContext().setAccessibleDescription("Misc options");
 		this.add(menu[OPTION]);
 		
+		menu[HELP] = new JMenu("Help");
+		menu[HELP].setMnemonic(KeyEvent.VK_F3);
+		menu[HELP].getAccessibleContext().setAccessibleDescription("Help and misc stuff");
+		this.add(menu[HELP]);
+		
 		menuItem[NEWMAP] = new JMenuItem("New Map");
 		menuItem[NEWMAP].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N,ActionEvent.CTRL_MASK));
 		menuItem[NEWMAP].getAccessibleContext().setAccessibleDescription("Clear the current map and returns a new blank one");		
 		menu[FILE].add(menuItem[NEWMAP]);
+				
+		menuItem[LOADMAP] = new JMenuItem("Open map");
+		menuItem[LOADMAP].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O,ActionEvent.CTRL_MASK));
+		menuItem[LOADMAP].getAccessibleContext().setAccessibleDescription("Loads a map file");		
+		menu[FILE].add(menuItem[LOADMAP]);
 		
 		menuItem[SAVEMAP] = new JMenuItem("Save Map");
 		menuItem[SAVEMAP].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S,ActionEvent.CTRL_MASK));
 		menuItem[SAVEMAP].getAccessibleContext().setAccessibleDescription("Saves the current map to a map file");		
 		menu[FILE].add(menuItem[SAVEMAP]);
-		
-		menuItem[LOADMAP] = new JMenuItem("Open map");
-		menuItem[LOADMAP].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O,ActionEvent.CTRL_MASK));
-		menuItem[LOADMAP].getAccessibleContext().setAccessibleDescription("Loads a map file");		
-		menu[FILE].add(menuItem[LOADMAP]);
 		
 		menuItem[CHANGECOLOR] = new JMenuItem("Cursor Color");
 		menuItem[CHANGECOLOR].getAccessibleContext().setAccessibleDescription("Loads a map file");		
@@ -69,7 +75,15 @@ public class MenuBar extends JMenuBar implements ActionListener{
 		menuItem[TILESPEED] = new JMenuItem("Tile Search Speed");
 		menuItem[TILESPEED].getAccessibleContext().setAccessibleDescription("Changes the speed of the tile browse buttons");		
 		menu[OPTION].add(menuItem[TILESPEED]);
+				
+		menuItem[ABOUT] = new JMenuItem("Help me");
+		menuItem[ABOUT].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_H,ActionEvent.CTRL_MASK));
+		menuItem[ABOUT].getAccessibleContext().setAccessibleDescription("Shows the commands");		
+		menu[HELP].add(menuItem[ABOUT]);
 		
+		menuItem[RESET] = new JMenuItem("Reset Configs");
+		menuItem[RESET].getAccessibleContext().setAccessibleDescription("Reset all configurations");		
+		menu[HELP].add(menuItem[RESET]);
 		
 		for(JMenuItem jm:menuItem)jm.addActionListener(this);
 		
@@ -83,19 +97,15 @@ public class MenuBar extends JMenuBar implements ActionListener{
 	
 	public void update(){
 		if(manager == null)manager.saveMap();		
-			
-		if(menu[FILE].isSelected() && !selected){
-			selected = true;
-			canDraw = false;
-			currentSelectedMenu = menu[FILE];
-		}
-		if(menu[OPTION].isSelected() && !selected){
-			selected = true;
-			canDraw = false;
-			currentSelectedMenu = menu[OPTION];
-		}
 		
-		
+		for(int i = 0; i < menu.length;i++){
+			if(menu[i].isSelected() && !selected){
+				selected = true;
+				canDraw = false;
+				currentSelectedMenu = menu[i];
+			}
+		}
+	
 		if(selected){
 			if(!currentSelectedMenu.isSelected()){
 				canDraw = true;
@@ -156,5 +166,21 @@ public class MenuBar extends JMenuBar implements ActionListener{
 			}
 		}
 		
+		else if(o == menuItem[ABOUT]){
+			JOptionPane.showMessageDialog(null, "Welcome to the 2015 map editor\n\n"
+					+ "The big left panel is where the map preview will be shown and where you will click to create and change objects in the map.\n"
+					+ "The right panel is where you select your current tile. To that by clicking on it.\n"
+					+ "To save your map press CONTROL+S or go to FILE->SAVE\n"
+					+ "To open an existing map press CONTROL+O or go to FILE->OPEN\n"
+					+ "To create a new empty map pres CONTROL+N or go to FILE->NEW MAP\n"
+					+ "\n\nCreated by Paulo Gaspar and Allan Alves for their gaming engine");			
+		}
+		else if(o == menuItem[RESET]){
+			int temp = JOptionPane.showConfirmDialog(null, "Are you sure you want to create a new map? Cancel and save your current work!");
+			if(temp == JOptionPane.OK_OPTION){
+				manager.defaultConfig();
+				manager.saveConfig();
+			}
+		}
 	} 
 }

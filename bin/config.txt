@@ -1,2 +1,2 @@
-tileSpeed 13
-cursorColor 255 0 0 100
+tileSpeed 20
+cursorColor 0 0 255 100
