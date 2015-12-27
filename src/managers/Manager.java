@@ -29,15 +29,14 @@ import tools.Camera;
 import tools.Loader;
 
 public class Manager {
-	private final int LEFT = 0,RIGHT = 1,UP = 2,DOWN = 3,MOUSE = 4, A = 5, S = 6,D = 7, W = 8;
+	private final int LEFT = 0,RIGHT = 1,UP = 2,DOWN = 3,MOUSE = 4, A = 5, S = 6,D = 7, W = 8,CONTROL= 9, 
+			Z = 10,C = 11;
 	
 	private boolean[] pressing;
 	public boolean pressedEnter;
 	private int creation;
 	private boolean changedMode;
-	
-	private boolean control;
-	private boolean z;
+
 	private boolean redo;
 	
 	private int newWidth;
@@ -230,6 +229,14 @@ public class Manager {
 		buttonHandling();
 		for(Platform p:platforms)p.update(camera);
 		controlZupdate();
+		
+		if(pressing[C] && pressing[CONTROL]){
+			int x = mouseMapPos().x;
+			int y = mouseMapPos().y;
+			if(x >= 0 && y>=0 && x < camera.getX()+camera.getW()-10 && y< -camera.getY()+camera.getH()-10)
+				if(map[y/tileHeight][x/tileWidth] != ribbon)
+					copyRibbon(x/tileWidth,y/tileHeight);
+		}
 		
 		if(!showPlatforms){
 			if(ribbon == 0)currentTool.setText("Current Tool: Delete Tile");
@@ -485,7 +492,7 @@ public class Manager {
 	}
 	
 	public void controlZupdate(){
-		if(control && z && !redo){
+		if(pressing[CONTROL] && pressing[Z] && !redo){
 			redo = true;
 			if(!control_z.isEmpty() ){
 				String[] temp = control_z.get(control_z.size()-1).split(" ");
@@ -690,11 +697,15 @@ public class Manager {
 			boxtool = 1;
 		}
 		
-		if(k == KeyEvent.VK_CONTROL && !control && !redo){
-			control = true;
+		if(k == KeyEvent.VK_CONTROL && !pressing[CONTROL] && !redo){
+			pressing[CONTROL] = true;
 		}
-		if(k == KeyEvent.VK_Z && !z && !redo){
-			z = true;
+		if(k == KeyEvent.VK_Z && !pressing[Z] && !redo){
+			pressing[Z] = true;
+		}
+		
+		if(k == KeyEvent.VK_C && !pressing[C]){
+			pressing[C] = true;
 		}
 		
 		if(k == KeyEvent.VK_LEFT && !pressing[LEFT]){
@@ -774,13 +785,16 @@ public class Manager {
 		if(k == KeyEvent.VK_DOWN && pressing[DOWN]){
 			pressing[DOWN] = false;
 		}
-		if(k == KeyEvent.VK_CONTROL && control){
-			control = false;
+		if(k == KeyEvent.VK_CONTROL && pressing[CONTROL]){
+			pressing[CONTROL] = false;
 			redo = false;
 		}
-		if(k == KeyEvent.VK_Z && z){
-			z = false;
+		if(k == KeyEvent.VK_Z && pressing[Z]){
+			pressing[Z] = false;
 			redo = false;
+		}
+		if(k == KeyEvent.VK_C && pressing[C]){
+			pressing[C] = false;
 		}
 		
 	}
@@ -881,7 +895,7 @@ public class Manager {
 	
 	
 	public void newMap(){
-		control = z = redo = false;
+		redo = false;
 		control_z = new ArrayList<String>();
 		lastTileChanged = new Point(-1, -1);
 		lastPlatform = new Point(-1, -1);
@@ -890,7 +904,8 @@ public class Manager {
 		creation = 0;
 		newWidth = 0;
 		newHeight = 0;
-		newX = 0;pressing = new boolean[9];
+		newX = 0;
+		pressing = new boolean[20];
 		for(int i = 0; i < pressing.length; i++)
 			pressing[i] = false;
 		newY = 0;
@@ -909,7 +924,7 @@ public class Manager {
 		changeMode.setText("To Box Mode");
 		camera = new Camera(0, 0, 780, 500);
 		ribbon = -1;	
-		pressing = new boolean[9];
+		pressing = new boolean[20];
 		for(int i = 0; i < pressing.length; i++)
 			pressing[i] = false;
 		map = new int[9][12];
