@@ -1,17 +1,19 @@
-package core;
+package elements;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 
+import tools.Camera;
+
 public class Platform {
 
-	int x;
-	int y;
-	int width;
-	int height;
-	int friction;
-	int id;
+	public int x;
+	public int y;
+	public int width;
+	public int height;
+	public int friction;
+	public int id;
 	
 	public Platform(int x,int y,int width, int height, int friction,int id){
 		this.x = x;

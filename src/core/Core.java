@@ -10,7 +10,7 @@ public class Core {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setVisible(true);
 		frame.setResizable(false);
-		frame.setContentPane(new Panel());
+		frame.setContentPane(new Panel(frame));
 		frame.setTitle("Super Paulo Map Editor");
 		frame.pack();
 		

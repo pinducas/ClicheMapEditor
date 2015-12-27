@@ -1,4 +1,4 @@
-package core;
+package managers;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -19,6 +19,14 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+import core.Panel;
+import elements.MenuBar;
+import elements.Platform;
+import elements.SizeBox;
+import elements.TextBox;
+import tools.Camera;
+import tools.Loader;
 
 public class Manager {
 	private final int LEFT = 0,RIGHT = 1,UP = 2,DOWN = 3,MOUSE = 4, A = 5, S = 6,D = 7, W = 8;
@@ -98,16 +106,17 @@ public class Manager {
 	private JTextField widthMult;
 	private JTextField heightMult;
 	
-	public Manager(JPanel panel){
+	private MenuBar menuBar;
+	
+	public Manager(Panel panel){
 		this.panel = panel;
 		map = new int[9][12];
+		
 		for(int i = 0; i < map.length; i++){
 			for(int j = 0; j < map[0].length; j++){
 				map[i][j] = 0;
 			}
 		}
-		
-
 		
 		tiles = new BufferedImage[16*16];
 		
@@ -260,112 +269,25 @@ public class Manager {
 		lastTileChanged = new Point(-1, -1);
 		lastPlatform = new Point(-1, -1);
 		lastId = -1;
+		
+		menuBar = new MenuBar(this,panel);
+		
+		
 	}
 	
-	public void update(){	
-		if(load.getModel().isPressed())loadMap();
-		if(save.getModel().isPressed())saveMap();
-		if(changeMode.getModel().isPressed() && !changedMode){
-			showPlatforms = !showPlatforms;
-			if(showPlatforms){
-				mode.setText("Mode: Platforms");
-				changeMode.setText("To Tile Mode");
-				currentTool.setText("Current Tool: Select Platform");
-				boxtool = 3;
-			}
-			else {
-				mode.setText("Mode: Tiles");
-				changeMode.setText("To Box Mode");
-				currentTool.setText("Current Tool: Delete Tile");
-				lastTileChanged = new Point(-1,-1);
-				ribbon = 0;
-			}
-			changedMode = true;
-		}
-		if(!changeMode.getModel().isPressed())changedMode = false;
-		if(up.getModel().isPressed() && positiony > 0)positiony -= 10;
-		if(down.getModel().isPressed())positiony += 10;
-		if(createbox.getModel().isPressed())boxtool = 0;
-		if(deletebox.getModel().isPressed())boxtool = 1;
-		if(movebox.getModel().isPressed())boxtool = -1;
-		if(changebox.getModel().isPressed())boxtool = 2;
-		if(selectbox.getModel().isPressed())boxtool = 3;
+	public void update(){
 		
+		menuBar.update();
+		boxWidth.update();
+		boxHeight.update();
+		
+		buttonHandling();
 		for(Platform p:platforms)p.update(camera);
-		
-		
-		if(control && z && !redo){
-			redo = true;
-			if(!control_z.isEmpty() ){
-				String[] temp = control_z.get(control_z.size()-1).split(" ");
-				control_z.remove(control_z.size()-1);
-				try{
-					if(temp[0].equals("Tile")){
-						map[Integer.parseInt(temp[2])][Integer.parseInt(temp[1])] = Integer.parseInt(temp[3]);
-					}
-					else if(temp[0].equals("Move")){
-						Platform a = null;
-						int id = Integer.parseInt(temp[3]);
-						for(Platform p:platforms){
-							if(p.id == id){
-								a = p;
-								break;
-							}
-						}
-						a.x = Integer.parseInt(temp[1]);
-						a.y = Integer.parseInt(temp[2]);
-					}
-					else if(temp[0].equals("Change")){
-						Platform a = null;
-						int id = Integer.parseInt(temp[5]);
-						for(Platform p:platforms){
-							if(p.id == id){
-								a = p;
-								break;
-							}
-						}
-						a.x = Integer.parseInt(temp[1]);
-						a.y = Integer.parseInt(temp[2]);
-						a.width = Integer.parseInt(temp[3]);
-						a.height = Integer.parseInt(temp[4]);
-					}
-					else if(temp[0].equals("Create")){
-						Platform a = null;
-						int id = Integer.parseInt(temp[1]);
-						for(Platform p:platforms){
-							if(p.id == id){
-								a = p;
-								break;
-							}
-						}						
-						platforms.remove(a);
-						
-					}
-					else if(temp[0].equals("Delete")){
-						int x = Integer.parseInt(temp[1]);
-						int y = Integer.parseInt(temp[2]);
-						int w = Integer.parseInt(temp[3]);
-						int h = Integer.parseInt(temp[4]);
-						Platform p = new Platform(x, y, w, h, 1, numPlatform);
-						numPlatform++;
-						platforms.add(p);
-					}
-					
-				}
-				catch(Exception e){
-					JOptionPane.showMessageDialog(null, "Error trying to undo");
-				}
-			}
-			
-		}
+		controlZupdate();
 		
 		if(!showPlatforms){
-			if(ribbon == 0){
-				currentTool.setText("Current Tool: Delete Tile");
-			}
-			else{
-				currentTool.setText("Current Tool: Drawing Tile "+ribbon);
-			}
+			if(ribbon == 0)currentTool.setText("Current Tool: Delete Tile");
+			else currentTool.setText("Current Tool: Drawing Tile "+ribbon);
 		}
 		else{
 			switch(boxtool){
@@ -387,7 +309,6 @@ public class Manager {
 			}
 		}
 		
-		
 		if(pressing[MOUSE]){
 			int x,y;
 			if(mousePosition.x > 800 && mousePosition.y> 268){
@@ -395,7 +316,7 @@ public class Manager {
 				x = (int)(mousePosition.x-800);
 				y = (int)(mousePosition.y-268);
 				if(x > 0 && x < 240 && y > 0 && y < 240)
-					copyRibbon(x/120,(y+positiony)/120);
+					selectRibbon(x/120,(y+positiony)/120);
 			}
 			else if(!showPlatforms){
 				panel.requestFocus();
@@ -510,8 +431,8 @@ public class Manager {
 					}
 				}				
 			}
+			
 		}
-		
 		
 		if(boxtool == 0){
 			if(creation == 2){
@@ -601,6 +522,7 @@ public class Manager {
 				}
 			}			
 		}
+		
 		if(heightMult.getText() != null){
 			if(heightMult.getText() != "0"){
 				int value = 0;
@@ -614,14 +536,136 @@ public class Manager {
 				}
 			}			
 		}
-		
-		
-		boxWidth.update();
-		boxHeight.update();
 	}
 	
-	public Point mouseMapPos(){
-		return new Point((int)(camera.getX()+mousePosition.x-10),(int)(510-mousePosition.y-camera.getY()));
+	public void controlZupdate(){
+		if(control && z && !redo){
+			redo = true;
+			if(!control_z.isEmpty() ){
+				String[] temp = control_z.get(control_z.size()-1).split(" ");
+				control_z.remove(control_z.size()-1);
+				try{
+					if(temp[0].equals("Tile")){
+						map[Integer.parseInt(temp[2])][Integer.parseInt(temp[1])] = Integer.parseInt(temp[3]);
+					}
+					else if(temp[0].equals("Move")){
+						Platform a = null;
+						int id = Integer.parseInt(temp[3]);
+						for(Platform p:platforms){
+							if(p.id == id){
+								a = p;
+								break;
+							}
+						}
+						a.x = Integer.parseInt(temp[1]);
+						a.y = Integer.parseInt(temp[2]);
+					}
+					else if(temp[0].equals("Change")){
+						Platform a = null;
+						int id = Integer.parseInt(temp[5]);
+						for(Platform p:platforms){
+							if(p.id == id){
+								a = p;
+								break;
+							}
+						}
+						a.x = Integer.parseInt(temp[1]);
+						a.y = Integer.parseInt(temp[2]);
+						a.width = Integer.parseInt(temp[3]);
+						a.height = Integer.parseInt(temp[4]);
+					}
+					else if(temp[0].equals("Create")){
+						Platform a = null;
+						int id = Integer.parseInt(temp[1]);
+						for(Platform p:platforms){
+							if(p.id == id){
+								a = p;
+								break;
+							}
+						}						
+						platforms.remove(a);
+						
+					}
+					else if(temp[0].equals("Delete")){
+						int x = Integer.parseInt(temp[1]);
+						int y = Integer.parseInt(temp[2]);
+						int w = Integer.parseInt(temp[3]);
+						int h = Integer.parseInt(temp[4]);
+						Platform p = new Platform(x, y, w, h, 1, numPlatform);
+						numPlatform++;
+						platforms.add(p);
+					}
+					
+				}
+				catch(Exception e){
+					JOptionPane.showMessageDialog(null, "Error trying to undo");
+				}
+			}	
+		}
+	}
+	
+	public void buttonHandling(){
+		if(load.getModel().isPressed()){
+			loadMap();
+			panel.requestFocus();
+		}
+		else if(save.getModel().isPressed()){
+			saveMap();
+			panel.requestFocus();
+		}
+		if(changeMode.getModel().isPressed() && !changedMode){
+			showPlatforms = !showPlatforms;
+			if(showPlatforms){
+				mode.setText("Mode: Platforms");
+				changeMode.setText("To Tile Mode");
+				currentTool.setText("Current Tool: Select Platform");
+				boxtool = 3;
+			}
+			else {
+				mode.setText("Mode: Tiles");
+				changeMode.setText("To Box Mode");
+				currentTool.setText("Current Tool: Delete Tile");
+				lastTileChanged = new Point(-1,-1);
+				ribbon = 0;
+			}
+			changedMode = true;
+			panel.requestFocus();
+		}
+		if(!changeMode.getModel().isPressed()){
+			changedMode = false;
+		}
+		if(up.getModel().isPressed() && positiony > 0){
+			positiony -= 10;
+			panel.requestFocus();
+		}
+		else if(down.getModel().isPressed()){
+			positiony += 10;
+			panel.requestFocus();
+		}
+		else if(createbox.getModel().isPressed()){
+			boxtool = 0;
+			panel.requestFocus();
+		}
+		else if(deletebox.getModel().isPressed()){
+			boxtool = 1;
+			panel.requestFocus();
+		}
+		else if(movebox.getModel().isPressed()){
+			boxtool = -1;
+			panel.requestFocus();
+		}
+		else if(changebox.getModel().isPressed()){
+			boxtool = 2;
+			panel.requestFocus();
+		}
+		else if(selectbox.getModel().isPressed()){
+			boxtool = 3;
+			panel.requestFocus();
+		}
+	}
+	
+	public boolean canDraw(){
+		return menuBar.canDraw();
 	}
 	
 	public void draw(Graphics2D gm,Graphics2D gt){
@@ -676,7 +720,6 @@ public class Manager {
 			
 			gm.setColor(Color.WHITE);
 		}
-
 	}
 	
 	public void keyPressed(int k) {
@@ -684,6 +727,7 @@ public class Manager {
 			if(camera.getX() < tileWidth * (map[0].length-1) - camera.getW())
 				camera.translate(tileWidth/2f, 0);	
 			pressing[D] = true;
+	
 		}
 		if(k == KeyEvent.VK_A && !pressing[A]){
 			if(camera.getX() > 0)
@@ -829,6 +873,7 @@ public class Manager {
 	public void mouseMoved(MouseEvent e){
 		mousePosition.x = e.getX();
 		mousePosition.y = e.getY();
+		
 	}
 	
 	public void mouseDragged(MouseEvent e){
@@ -877,13 +922,20 @@ public class Manager {
 		}
 	}
 	
-	public void copyRibbon(int x, int y){
+	public void selectRibbon(int x, int y){
 		ribbon = x+2*y;
 		lastTileChanged = new Point(-1,-1);
 		if(ribbon > tiles.length-1)ribbon = -1;
 	}
 	
-	private void saveMap(){
+
+	public void copyRibbon(int x, int y){
+		ribbon = map[y][x];
+		lastTileChanged = new Point(-1,-1);
+	}
+	
+	
+	public void saveMap(){
 		try{
 			int resp = explorer.showSaveDialog(panel);
 			File file;
@@ -940,7 +992,7 @@ public class Manager {
 	}
 	
 	
-	private void loadMap(){
+	public void loadMap(){
 		try{
 			int resp = explorer.showOpenDialog(panel);
 			File file;
@@ -1001,5 +1053,8 @@ public class Manager {
 		
 	}
 	
+	public Point mouseMapPos(){
+		return new Point((int)(camera.getX()+mousePosition.x-10),(int)(510-mousePosition.y-camera.getY()));
+	}
 	
 }

@@ -1,4 +1,4 @@
-package core;
+package elements;
 
 import java.awt.Rectangle;
 

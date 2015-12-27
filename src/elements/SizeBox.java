@@ -1,6 +1,8 @@
-package core;
+package elements;
 
 import javax.swing.JPanel;
+
+import managers.Manager;
 
 @SuppressWarnings("serial")
 public class SizeBox extends TextBox{

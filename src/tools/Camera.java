@@ -1,4 +1,4 @@
-package core;
+package tools;
 
 public class Camera {
 

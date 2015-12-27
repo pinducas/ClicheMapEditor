@@ -12,8 +12,11 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+
+import managers.Manager;
 
 @SuppressWarnings("serial")
 public class Panel extends JPanel implements Runnable,KeyListener,MouseListener,MouseMotionListener {
@@ -23,18 +26,21 @@ public class Panel extends JPanel implements Runnable,KeyListener,MouseListener,
 	
 	private int FPS = 60;
 	private long targetTime = 1000/FPS;
-		
-	private BufferedImage map_image;
-	private BufferedImage tiles_image;
-	
-	private Graphics2D gm;
-	private Graphics2D gt;
 	
 	private Manager manager;
 	
-	public Panel(){
+	private JFrame frame;
+	
+	public Graphics2D gm;
+	public Graphics2D gt;
+
+	public BufferedImage map_image;
+	public BufferedImage tiles_image;
+	
+	public Panel(JFrame frame){
 		super();
 		
+		this.frame = frame;
 		this.setDoubleBuffered(true);
 		this.setLayout(null);
 		
@@ -53,10 +59,13 @@ public class Panel extends JPanel implements Runnable,KeyListener,MouseListener,
 		gt.setFont(new Font("Arial",Font.BOLD, 24));
 		gt.setColor(Color.BLACK);
 		
-		
-		
+	
 		manager = new Manager(this);
 		
+	}
+	
+	public JFrame getFrame(){
+		return frame;
 	}
 	
 	public void addNotify(){
@@ -80,7 +89,6 @@ public class Panel extends JPanel implements Runnable,KeyListener,MouseListener,
 	public void draw(){
 		gm.clearRect(1, 1, 778, 498);
 		gt.clearRect(1, 1, 238, 238);
-		
 		manager.draw(gm,gt);
 	}
 	
@@ -94,14 +102,16 @@ public class Panel extends JPanel implements Runnable,KeyListener,MouseListener,
 			//loop
 			start = System.nanoTime();
 			update();
-			draw();
 			
-			Graphics g2 = getGraphics();
-					
-			g2.drawImage(map_image,10,10,780,500,null);
-			g2.drawImage(tiles_image, 800, 268, 240, 240, null);
+			if(manager.canDraw()){
+				draw();
+				
+				Graphics g2 = getGraphics();
+				g2.drawImage(map_image,10,10,780,500,null);
+				g2.drawImage(tiles_image, 800, 268, 240, 240, null);
+				g2.dispose();
+			}
 			
-			g2.dispose();
 			
 			elapsedTime= System.nanoTime()-start;
 			wait = targetTime-elapsedTime/1000000;
@@ -124,7 +134,6 @@ public class Panel extends JPanel implements Runnable,KeyListener,MouseListener,
 	@Override
 	public void keyPressed(KeyEvent e) {
 		manager.keyPressed(e.getKeyCode());
-		
 	}
 
 	@Override
@@ -165,7 +174,7 @@ public class Panel extends JPanel implements Runnable,KeyListener,MouseListener,
 
 	@Override
 	public void mouseDragged(MouseEvent e) {
-		manager.mouseDragged(e);
+		manager.mouseDragged(e);		
 	}
 
 	@Override
