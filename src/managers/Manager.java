@@ -21,8 +21,11 @@ import javax.swing.JTextField;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import core.Panel;
+import elements.ColorPicker;
 import elements.MenuBar;
+import elements.MultipleInputPane;
 import elements.Platform;
+import elements.PointLight;
 import elements.SizeBox;
 import elements.TextBox;
 import tools.Camera;
@@ -49,6 +52,7 @@ public class Manager {
 	public int [][]map;
 	
 	private ArrayList<Platform> platforms;
+	private ArrayList<PointLight> pointLights;
 	
 	private ArrayList<String> control_z;
 	private Point lastTileChanged;
@@ -61,6 +65,7 @@ public class Manager {
 	private int tileHeight;
 	
 	private int numPlatform;
+	private int numLight;
 	
 	private int ribbon;
 	
@@ -84,6 +89,8 @@ public class Manager {
 	private JButton movebox;
 	private JButton changebox;
 	private JButton selectbox;
+	private JButton createLight;
+	private JButton deleteLight;
 	
 	private JButton up;
 	private JButton down;
@@ -98,6 +105,7 @@ public class Manager {
 	private Color cursorColor;
 	
 	private Platform selectedPlatform;
+	private PointLight selectedLight;
 	
 	private JLabel currentTool;
 	private JLabel mode;
@@ -146,28 +154,25 @@ public class Manager {
 		dimensions.setBounds(920,540,250,40);
 		panel.add(dimensions);
 		
-		changeMode = new JButton("To Box Mode");
-		changeMode.setBounds(10,540,140,40);
-		panel.add(changeMode);	
+		changeMode = createButton("To Body Mode",10,540,140,40);
 		
-		up = new JButton("^");
-		down = new JButton("v");
-		up.setBounds(1045,268,50,115);
-		down.setBounds(1045,392,50,115);
+		up = createButton("^",1045,268,50,115);
+		down = createButton("v",1045,392,50,115);
 		
 		panel.add(up);
 		panel.add(down);		
 		
-		createbox = new JButton("Create Box");
-		deletebox = new JButton("Delete Box");
-		movebox = new JButton("Move Box");
-		changebox = new JButton("Define Box");
-		selectbox = new JButton("Select Box");
-		createbox.setBounds(820, 30, 120,30);
-		deletebox.setBounds(975, 30, 120,30);
-		movebox.setBounds(820, 75, 120,30);
-		changebox.setBounds(975, 75, 120,30);
-		selectbox.setBounds(820, 120, 120,30);
+		createbox = createButton("Create Box",820, 30, 120,30);
+		deletebox = createButton("Delete Box",975, 30, 120,30);
+		movebox = createButton("Move Box",820, 75, 120,30);
+		changebox = createButton("Define Box",975, 75, 120,30);
+		selectbox = createButton("Select Box",820, 120, 120,30);
+		
+		JLabel temp  = new JLabel("Lights");
+		temp.setBounds(820, 155, 100, 40);
+		panel.add(temp);
+		createLight = createButton("Create Light", 820, 190, 140, 30);
+		deleteLight = createButton("Delete Light", 965, 190, 140, 30);
 		
 		panel.add(createbox);
 		panel.add(deletebox);
@@ -175,7 +180,7 @@ public class Manager {
 		panel.add(changebox);
 		panel.add(selectbox);
 		
-		JLabel temp = new JLabel("Platforms");
+		temp = new JLabel("Platforms");
 		temp.setBounds(820,-10,500,50);
 		panel.add(temp);
 		
@@ -224,6 +229,7 @@ public class Manager {
 		}
 			
 		loadConfig();
+	
 		
 	}
 	
@@ -236,7 +242,6 @@ public class Manager {
 		boxHeight.update();
 		
 		buttonHandling();
-		for(Platform p:platforms)p.update(camera);
 		controlZupdate();
 		
 		if(pressing[C] && pressing[CONTROL]){
@@ -254,6 +259,7 @@ public class Manager {
 			else currentTool.setText("Current Tool: Drawing Tile "+ribbon);
 		}
 		else{
+			for(Platform p:platforms)p.update(camera);
 			switch(boxtool){
 				case -1:
 					currentTool.setText("Current Tool: Move Platform");
@@ -269,6 +275,12 @@ public class Manager {
 					break;
 				case 3:
 					currentTool.setText("Current Tool: Select Platform");
+					break;
+				case 4:
+					currentTool.setText("Current Tool: Create Light");
+					break;
+				case 5:
+					currentTool.setText("Current Tool: Delete Light");
 					break;
 			}
 		}
@@ -294,18 +306,40 @@ public class Manager {
 			else if(showPlatforms){
 				panel.requestFocus();
 
-				if(selectedPlatform == null){
-					Rectangle m = new Rectangle(mouseMapPos().x-2-(int)camera.getX(),
-							500-mouseMapPos().y-2-(int)camera.getY(),4,4);
-					for(Platform p:platforms){
-						if(p.getRect(camera).intersects(m)){
-							selectedPlatform = p;
-							break;
+				if(boxtool < 4){
+					if(selectedPlatform == null){
+						Rectangle m = new Rectangle(mouseMapPos().x-2-(int)camera.getX(),
+								500-mouseMapPos().y-2-(int)camera.getY(),4,4);
+						for(Platform p:platforms){
+							if(p.getRect(camera).intersects(m)){
+								selectedPlatform = p;
+								break;
+							}
+						}
+					}
+				}
+				else{
+					if(selectedLight == null){
+						Rectangle m = new Rectangle(mouseMapPos().x-2-(int)camera.getX(),
+								500-mouseMapPos().y-2-(int)camera.getY(),4,4);
+						for(PointLight p:pointLights){
+							if(p.getRect(camera).intersects(m)){
+								selectedLight = p;
+								break;
+							}
 						}
 					}
 				}
 				
-				if(boxtool == -1){
+				if(boxtool == 4){
+					if(creation == 0){
+						creation = 1;
+						newX = mouseMapPos().x;
+						newY = mouseMapPos().y;
+					}
+				}
+				
+				else if(boxtool == -1){
 					creation = 0;
 					if(selectedPlatform != null){
 						if(lastId == -1){
@@ -319,44 +353,44 @@ public class Manager {
 				if(boxtool == 2){
 					creation = 0;
 					if(selectedPlatform != null){
-						String resp = "";
 						int tempBox[] = new int[4];
 						tempBox[0] = selectedPlatform.x;
 						tempBox[1] = selectedPlatform.y;
 						tempBox[2] = selectedPlatform.width;
 						tempBox[3] = selectedPlatform.height;
 						
+						int resp[];
+						
 						try{
-							resp = JOptionPane.showInputDialog("Current platform values",(int)(selectedPlatform.x-selectedPlatform.width/2)+"x"+
-						(int)(selectedPlatform.y - selectedPlatform.height/2)+"x"+selectedPlatform.width+"x"+selectedPlatform.height);
+							MultipleInputPane pane = new MultipleInputPane();
+							String [] fieldText = {"X: ","Y: ","WIDTH: ","HEIGHT: "};
+							String [] fieldValue = {(int)(selectedPlatform.x-selectedPlatform.width/2)+"",
+									(int)(selectedPlatform.y - selectedPlatform.height/2)+"",selectedPlatform.width+"",""+selectedPlatform.height};
+							resp = pane.getNumberInputs("Define the camera speed in pixels", fieldText, fieldValue, 4);
+							if(resp == null){
+								boxtool = 3;
+								selectbox = null;
+								return;
+							}
 						}catch(Exception e){
 							selectedPlatform = null;
 							boxtool = 3;
 							return;
 						}
-						if(resp == null){
-							selectedPlatform = null;
-							boxtool = 3;
-							return;
-						}
-						if(resp.length() < 7){
-							selectedPlatform = null;
-							boxtool = 3;
-							return;
-						}
+						
 						try{
-							String []temp = resp.split("x");
-							if(temp.length < 4)return;
-							int w =  Integer.parseInt(temp[2]);
-							int h =  Integer.parseInt(temp[3]);
+							
+							int w =  resp[2];
+							int h =  resp[3];
 
-							int tx = (int) (Integer.parseInt(temp[0])+w/2);
-							int ty = (int)(Integer.parseInt(temp[1])+h/2);
+							int tx = (int) (resp[0]+w/2);
+							int ty = (int)(resp[1]+h/2);
 							
 							if(tx < 0 || ty < 0 || tx > (map[0].length-1)*tileWidth || ty > (map.length-1)*tileHeight||
 									 w > (map[0].length-1)*tileWidth ||
 									 h > (map.length-1)*tileHeight){
 								boxtool = 3;
+								selectedPlatform = null;
 								return;
 							}
 							
@@ -398,26 +432,141 @@ public class Manager {
 			
 		}
 		
-		if(boxtool == 0){
+		if(boxtool == 4){
 			if(creation == 2){
-				String resp = "";
+				int [] resp;
+				Color c;
 				try{
-					resp = JOptionPane.showInputDialog("New tile dimensions",tileWidth+"x"+tileHeight);
+					MultipleInputPane pane = new MultipleInputPane();
+					String [] fieldText = {"RADIUS: "};
+					String [] fieldValue = {""+tileWidth};
+					resp = pane.getNumberInputs("Define the light radius", fieldText, fieldValue, 1);
+					if(resp == null){
+						boxtool = -1;
+						creation = 0;
+						selectedLight = null;
+						return;
+					}
+					ColorPicker cp = new ColorPicker("Pick the light color");
+					c = cp.getColor();
+					if(c == null){
+						boxtool = -1;
+						creation = 0;
+						selectedLight = null;
+						return;
+					}
+					
 				}catch(Exception e){
-					boxtool = 3;
+					boxtool = -1;
+					selectedLight = null;
 					creation = 0;
 					return;
 				}
 				
 				try{
-					String []temp = resp.split("x");
-					if(temp.length < 2)return;
-					int w =  Integer.parseInt(temp[0]);
-					int h =  Integer.parseInt(temp[1]);
+					int radius = resp[0];
+					
+					if(radius > (map[0].length-1)*tileWidth){
+						boxtool = -1;
+						creation = 0;
+						selectedLight = null;
+						return;
+					}
+					
+					PointLight p = new PointLight(mouseMapPos().x, mouseMapPos().y, radius,numLight,c);
+					pointLights.add(p);
+					numLight++;
+					selectedLight = p;
+					selectedLight.radius = radius;
+					
+					control_z.add("CreateL "+p.id);
+					
+					boxtool = -1;
+					creation = 0;
+					selectedLight = null;
+				}catch(Exception e){
+					selectedLight = null;
+					boxtool = -1;
+					creation = 0;
+					return;
+				}
+			}
+			if(creation == 3){
+				
+				ColorPicker cp = new ColorPicker("Pick the light color");
+				Color c = cp.getColor();
+				if(c == null){
+					boxtool = -1;
+					creation = 0;
+					selectedLight = null;
+					return;
+				}
+				
+				int tempX = newX;
+				int tempY = newY;
+				int tempW = newWidth;
+				int tempH = newHeight;
+				
+				if(newWidth < 0){
+					tempX += newWidth;
+					tempW = -tempW;
+				}
+				if(newHeight < 0){
+					tempY -= newHeight;
+					tempH = -tempH;
+				}
+				
+				tempX += (int)(tempW/2);
+				tempY -= (int)(tempH/2);
+				
+				PointLight p = new PointLight(tempX,tempY,tempW,numLight,c);
+				pointLights.add(p);
+				numLight++;
+				newX = 0;
+				newY = 0;
+				newWidth = 0;
+				newHeight= 0;
+				creation = 0;
+				
+				control_z.add("CreateL "+p.id);
+				
+				boxtool = -1;
+				creation = 0;
+				selectedLight = null;	
+			}
+			
+		}
+		
+		if(boxtool == 0){
+			if(creation == 2){
+				int [] resp;
+				try{
+					MultipleInputPane pane = new MultipleInputPane();
+					String [] fieldText = {"WIDTH: ","HEIGHT: "};
+					String [] fieldValue = {""+tileWidth,""+tileHeight};
+					resp = pane.getNumberInputs("Define the platform dimensions", fieldText, fieldValue, 2);
+					if(resp == null){
+						boxtool = 3;
+						creation = 0;
+						selectbox = null;
+						return;
+					}
+				}catch(Exception e){
+					boxtool = 3;
+					selectbox = null;
+					creation = 0;
+					return;
+				}
+				
+				try{
+					int w = resp[0];
+					int h =  resp[1];
 					
 					if(w > (map[0].length-1)*tileWidth ||
 							 h > (map.length-1)*tileHeight){
 						boxtool = 3;
+						creation = 0;
+						selectbox = null;
 						return;
 					}
 					
@@ -431,6 +580,8 @@ public class Manager {
 					control_z.add("Create "+p.id);
 					
 					boxtool = 3;
+					creation = 0;
+					selectbox = null;
 				}catch(Exception e){
 					selectedPlatform = null;
 					boxtool = 3;
@@ -569,18 +720,25 @@ public class Manager {
 	}
 	
 	public void buttonHandling(){
+		if(createLight.getModel().isPressed()){
+			boxtool = 4;
+			creation = 0;
+		}
+		else if(deleteLight.getModel().isPressed()){
+			boxtool = 5;
+		}
 		
 		if(changeMode.getModel().isPressed() && !changedMode){
 			showPlatforms = !showPlatforms;
 			if(showPlatforms){
-				mode.setText("Mode: Platforms");
+				mode.setText("Mode: Bodies");
 				changeMode.setText("To Tile Mode");
 				currentTool.setText("Current Tool: Select Platform");
 				boxtool = 3;
 			}
 			else {
 				mode.setText("Mode: Tiles");
-				changeMode.setText("To Box Mode");
+				changeMode.setText("To Body Mode");
 				currentTool.setText("Current Tool: Delete Tile");
 				lastTileChanged = new Point(-1,-1);
 				ribbon = 0;
@@ -608,8 +766,10 @@ public class Manager {
 		else if(changebox.getModel().isPressed()){
 			boxtool = 2;
 		}
-		else if(selectbox.getModel().isPressed()){
-			boxtool = 3;
+		else if(selectbox != null){
+			if(selectbox.getModel().isPressed()){
+				boxtool = 3;
+			}
 		}
 	}
 	
@@ -626,12 +786,15 @@ public class Manager {
 				
 			}
 		}
-		gm.setColor(cursorColor);
-		int col = mouseMapPos().x/tileWidth;
-		int line = mouseMapPos().y/tileHeight;
-		gm.fillRect((int)(col*tileWidth-camera.getX()),	(int)(500-tileHeight-line * tileHeight-camera.getY())
-				,tileWidth,tileHeight);
-		gm.setColor(Color.WHITE);
+		
+		if(!showPlatforms){
+			gm.setColor(cursorColor);
+			int col = mouseMapPos().x/tileWidth;
+			int line = mouseMapPos().y/tileHeight;
+			gm.fillRect((int)(col*tileWidth-camera.getX()),	(int)(500-tileHeight-line * tileHeight-camera.getY())
+					,tileWidth,tileHeight);
+			gm.setColor(Color.WHITE);
+		}
 		
 		int currentLine = -1;
 		for(int i = 0; i < tiles.length; i++){
@@ -643,8 +806,9 @@ public class Manager {
 			}
 		}
 		
-		if(showPlatforms)
-			for(Platform p:platforms)p.draw(gm,camera);
+		if(showPlatforms)for(Platform p:platforms)p.draw(gm,camera);
+		
+		for(PointLight p:pointLights)p.draw(gm,camera);
 		
 		gm.setColor(Color.BLACK);
 		gm.fillRect(mouseMapPos().x-10-(int)camera.getX(),500-mouseMapPos().y+2-(int)camera.getY(),6,2);
@@ -653,7 +817,7 @@ public class Manager {
 		gm.fillRect(mouseMapPos().x-(int)camera.getX(),500-mouseMapPos().y-10-(int)camera.getY(),2,6);
 		
 		
-		if(creation == 1){
+		if(creation == 1 && boxtool == 0){
 			gm.setColor(new Color(0,254,0,100));
 						
 			int tempX = newX - (int)camera.getX();
@@ -675,6 +839,27 @@ public class Manager {
 			
 			gm.setColor(Color.WHITE);
 		}
+		if(creation == 1 && boxtool == 4){
+			gm.setColor(new Color(0,254,0,100));
+						
+			int tempX = newX - (int)camera.getX();
+			int tempY = 500 - newY - (int)camera.getY();
+			int tempW = newWidth;
+			int tempH = newWidth;
+			
+			if(newWidth < 0){
+				tempX += newWidth;
+				tempW = -tempW;
+				tempY += newWidth;
+				tempH = -tempH;
+			}
+			
+			gm.fillOval(tempX,tempY,tempW,tempH);
+			
+			
+			gm.setColor(Color.WHITE);
+		}
+		
 	}
 	
 	public void keyPressed(int k) {
@@ -811,7 +996,10 @@ public class Manager {
 	}
 	
 	public void mousePressed(MouseEvent e) {
-		if(!pressing[MOUSE])selectedPlatform = null;
+		if(!pressing[MOUSE]){
+			selectedPlatform = null;
+			selectedLight = null;
+		}
 		pressing[MOUSE] = true;
 	}
 	
@@ -920,6 +1108,7 @@ public class Manager {
 		for(int i = 0; i < pressing.length; i++)
 			pressing[i] = false;
 		newY = 0;
+		selectedLight = null;
 		selectedPlatform = null;
 		mousePosition = new Point(0, 0);
 		widthMult.setText("0");
@@ -932,7 +1121,7 @@ public class Manager {
 		numPlatform = 0;
 		positiony = 0;
 		platforms = new ArrayList<Platform>();
-		changeMode.setText("To Box Mode");
+		changeMode.setText("To Body Mode");
 		camera = new Camera(0, 0, 780, 500);
 		ribbon = -1;	
 		pressing = new boolean[20];
@@ -946,6 +1135,9 @@ public class Manager {
 		}
 		boxWidth.setText(""+map[0].length);
 		boxHeight.setText(""+map.length);
+		
+		pointLights = new ArrayList<PointLight>();
+		numLight = 0;
 	}
 	
 	public void setCursorColor(Color color){
@@ -1021,7 +1213,11 @@ public class Manager {
 				}
 				
 				//ENEMIES PRINT
-				out.println("0");
+				out.println(""+pointLights.size());
+				for(PointLight p:pointLights){
+					temp = p.x+" "+p.y+" "+p.radius+" "+p.color.getRed()+" "+p.color.getGreen()+" "+p.color.getBlue();
+					out.println(temp);
+				}
 				out.close();
 				
 				
@@ -1104,12 +1300,21 @@ public class Manager {
 						Integer.parseInt(temp[2]), Integer.parseInt(temp[3]), Integer.parseInt(temp[4]),i));
 			}
 			
+			int numLight = Integer.parseInt(in.nextLine());
+			ArrayList<PointLight>pointLights = new ArrayList<PointLight>();
+			for(int i = 0; i < numLight; i++){
+				temp = in.nextLine().split(" ");
+				pointLights.add(new PointLight(Integer.parseInt(temp[0]), Integer.parseInt(temp[1]),
+						Integer.parseInt(temp[2]),i, new Color(Integer.parseInt(temp[3]), Integer.parseInt(temp[4]),Integer.parseInt(temp[5]))));
+			}
 			
 			in.close();
 			
 			this.platforms = platforms;
 			this.map = map;
 			this.numPlatform = numPlatform;
+			this.numLight = numLight;
+			this.pointLights = pointLights;
 			boxWidth.setText(""+map[0].length);
 			boxHeight.setText(""+map.length);
 			
@@ -1189,6 +1394,13 @@ public class Manager {
 		positiony = 0;
 		camSpeed = new Point((int)(tileWidth/2f),(int)(tileHeight/2f));
 		camera.setPosition(0, 0);
+	}
+	
+	public JButton createButton(String text,int x,int y,int width,int height){
+		JButton temp = new JButton(text);
+		temp.setBounds(x,y,width,height);
+		panel.add(temp);
+		return temp;
 	}
 	
 }
