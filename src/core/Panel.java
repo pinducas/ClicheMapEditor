@@ -37,7 +37,7 @@ public class Panel extends JPanel implements Runnable,KeyListener,MouseListener,
 	public BufferedImage map_image;
 	public BufferedImage tiles_image;
 	
-	public Panel(JFrame frame){
+	public Panel(JFrame frame,String []args){
 		super();
 		
 		this.frame = frame;
@@ -60,7 +60,7 @@ public class Panel extends JPanel implements Runnable,KeyListener,MouseListener,
 		gt.setColor(Color.BLACK);
 		
 	
-		manager = new Manager(this);
+		manager = new Manager(this,args);
 		
 	}
 	

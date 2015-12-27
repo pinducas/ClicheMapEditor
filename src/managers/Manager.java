@@ -108,7 +108,7 @@ public class Manager {
 	
 	public MenuBar menuBar;
 	
-	public Manager(Panel panel){
+	public Manager(Panel panel,String []args){
 		this.panel = panel;
 
 		tiles = new BufferedImage[16*16];
@@ -211,8 +211,17 @@ public class Manager {
 		FileNameExtensionFilter filter = new FileNameExtensionFilter(".map FILES", "map");
 		explorer = new JFileChooser();
 		explorer.setFileFilter(filter);
+		newMap();	
 
-		newMap();		
+		
+		if(args!=null){
+			try{
+				loadAbsolutePathMap(args[0]);
+			}catch(Exception e){
+				newMap();
+			}
+		}
+		
 		
 		loadConfig();
 		
@@ -1107,10 +1116,56 @@ public class Manager {
 		
 	}
 	
+	public void loadAbsolutePathMap(String path){
+		try{
+			File file = new File(path);
+			
+			Scanner in = new Scanner(file);
+			
+			String []temp = in.nextLine().split("#");
+			
+			int width = Integer.parseInt(temp[1]);
+			int height = Integer.parseInt(temp[0]);
+			
+			int[][] map = new int[height][width];
+			
+			for(int line = 0; line < height; line++){
+				temp = in.nextLine().split(" ");
+				for(int col = 0; col < width; col++){
+					map[line][col] = Integer.parseInt(temp[col]);
+				}
+			}
+			
+			int numPlatform = Integer.parseInt(in.nextLine());
+			ArrayList<Platform>platforms = new ArrayList<Platform>();
+			
+			for(int i = 0; i < numPlatform; i++){
+				temp = in.nextLine().split(" ");
+				platforms.add(new Platform(Integer.parseInt(temp[0]), Integer.parseInt(temp[1]),
+						Integer.parseInt(temp[2]), Integer.parseInt(temp[3]), Integer.parseInt(temp[4]),i));
+			}
+			
+			
+			in.close();
+			
+			this.platforms = platforms;
+			this.map = map;
+			this.numPlatform = numPlatform;
+			boxWidth.setText(""+map[0].length);
+			boxHeight.setText(""+map.length);
+			
+		}
+		catch(Exception e){
+			JOptionPane.showMessageDialog(null,"Could not load map");
+		}
+		
+		
+	}
+	
+	
 	public Color getCursorColor(){
 		return cursorColor;
 	}
-	
 	public void defaultConfig(){
 		tileSpeed = 20;
 		cursorColor = new Color(0,0,255,100);	
