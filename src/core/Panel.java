@@ -111,6 +111,9 @@ public class Panel extends JPanel implements Runnable,KeyListener,MouseListener,
 				g2.drawImage(tiles_image, 800, 268, 240, 240, null);
 				g2.dispose();
 			}
+			else{
+				manager.menuBar.repaint();
+			}
 			
 			
 			elapsedTime= System.nanoTime()-start;

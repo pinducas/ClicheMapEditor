@@ -1,6 +1,8 @@
 package elements;
 
+import java.awt.Color;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 
 import javax.swing.JMenu;
@@ -13,49 +15,127 @@ import core.Panel;
 import managers.Manager;
 
 @SuppressWarnings("serial")
-public class MenuBar extends JMenuBar{
+public class MenuBar extends JMenuBar implements ActionListener{
+	
+	private final int FILE = 0, OPTION = 1;
+	private final int NEWMAP = 0, SAVEMAP = 1, LOADMAP = 2, CHANGECOLOR = 3;
 	
 	private Manager manager;
-		
-	private JMenu tempMenu;
-	private JMenuItem newMapItem;
+	
+	private JMenu [] menu;
+	private JMenuItem[] menuItem;
+	
+	
+	private JMenu currentSelectedMenu;
+	private boolean selected;
 	
 	private boolean canDraw;
 	
 	public MenuBar(Manager manager,Panel panel){
 		this.manager = manager;
 		
-		tempMenu = new JMenu("Test");
-		tempMenu.setMnemonic(KeyEvent.VK_F1);
-		tempMenu.getAccessibleContext().setAccessibleDescription("Testing this stuff");
-		this.add(tempMenu);
+		menu = new JMenu[2];
+		menuItem = new JMenuItem[4];
 		
-		newMapItem = new JMenuItem("New Map");
-		newMapItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S,ActionEvent.CTRL_MASK));
-		newMapItem.getAccessibleContext().setAccessibleDescription("Clear the current map and returns a new blank one");		
-		tempMenu.add(newMapItem);
+		menu[FILE] = new JMenu("File");
+		menu[FILE].setMnemonic(KeyEvent.VK_F1);
+		menu[FILE].getAccessibleContext().setAccessibleDescription("File operations");
+		this.add(menu[FILE]);
+		
+		menu[OPTION] = new JMenu("Options");
+		menu[OPTION].setMnemonic(KeyEvent.VK_F2);
+		menu[OPTION].getAccessibleContext().setAccessibleDescription("Misc options");
+		this.add(menu[OPTION]);
+		
+		menuItem[NEWMAP] = new JMenuItem("New Map");
+		menuItem[NEWMAP].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N,ActionEvent.CTRL_MASK));
+		menuItem[NEWMAP].getAccessibleContext().setAccessibleDescription("Clear the current map and returns a new blank one");		
+		menu[FILE].add(menuItem[NEWMAP]);
+		
+		menuItem[SAVEMAP] = new JMenuItem("Save Map");
+		menuItem[SAVEMAP].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S,ActionEvent.CTRL_MASK));
+		menuItem[SAVEMAP].getAccessibleContext().setAccessibleDescription("Saves the current map to a map file");		
+		menu[FILE].add(menuItem[SAVEMAP]);
+		
+		menuItem[LOADMAP] = new JMenuItem("Open map");
+		menuItem[LOADMAP].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O,ActionEvent.CTRL_MASK));
+		menuItem[LOADMAP].getAccessibleContext().setAccessibleDescription("Loads a map file");		
+		menu[FILE].add(menuItem[LOADMAP]);
+		
+		menuItem[CHANGECOLOR] = new JMenuItem("Cursor Color");
+		menuItem[CHANGECOLOR].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P,ActionEvent.CTRL_MASK));
+		menuItem[CHANGECOLOR].getAccessibleContext().setAccessibleDescription("Loads a map file");		
+		menu[OPTION].add(menuItem[CHANGECOLOR]);
+		
+		
+		for(JMenuItem jm:menuItem)jm.addActionListener(this);
+		
 		
 		panel.getFrame().setJMenuBar(this);
 		
 		canDraw = true;
+		currentSelectedMenu = null;
+		selected = false;
 	}
 	
 	public void update(){
-		if(manager == null)manager.saveMap();
-
-		if(tempMenu.getModel().isSelected()){
+		if(manager == null)manager.saveMap();		
+			
+		if(menu[FILE].isSelected() && !selected){
+			selected = true;
 			canDraw = false;
+			currentSelectedMenu = menu[FILE];
 		}
-		else{
-			canDraw = true;
+		if(menu[OPTION].isSelected() && !selected){
+			selected = true;
+			canDraw = false;
+			currentSelectedMenu = menu[OPTION];
 		}
 		
-		if(newMapItem.getModel().isPressed()){
-			JOptionPane.showMessageDialog(null, "SUCK IT BITCHES");
-		}
-	
+		
+		if(selected){
+			if(!currentSelectedMenu.isSelected()){
+				canDraw = true;
+				selected = false;
+				currentSelectedMenu = null;
+			}
+		}	
 	}
 	
 	
 	public boolean canDraw(){return canDraw;}
+
+	@Override
+	public void paint(java.awt.Graphics g) {
+		super.paint(g);
+		for(JMenuItem m:menuItem)m.repaint();
+	}
+	
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		Object o = e.getSource();
+		
+		if(o == menuItem[NEWMAP]){
+			int temp = JOptionPane.showConfirmDialog(null, "Are you sure you want to create a new map? Cancel and save your current work!");
+			if(temp == JOptionPane.OK_OPTION){
+				manager.newMap();
+			}
+		}
+		else if(o == menuItem[SAVEMAP]){
+			manager.saveMap();
+		}
+		else if(o == menuItem[LOADMAP]){
+			manager.loadMap();
+		}
+		else if(o == menuItem[CHANGECOLOR]){
+			MultipleInputPane pane = new MultipleInputPane();
+			String [] fieldText = {"R: ","G: ","B: ","A: "};
+			int [] resp = pane.getNumberInputs("Define the R G B A values", fieldText, null, 4);
+			if(resp != null){
+				manager.setCursorColor(new Color(resp[0],resp[1],resp[2],resp[3]));
+			}			
+		}
+
+		
+	} 
 }

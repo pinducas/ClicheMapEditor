@@ -96,6 +96,8 @@ public class Manager {
 	
 	private Point mousePosition;
 	
+	private Color cursorColor;
+	
 	private Platform selectedPlatform;
 	
 	private JLabel currentTool;
@@ -106,18 +108,11 @@ public class Manager {
 	private JTextField widthMult;
 	private JTextField heightMult;
 	
-	private MenuBar menuBar;
+	public MenuBar menuBar;
 	
 	public Manager(Panel panel){
 		this.panel = panel;
-		map = new int[9][12];
-		
-		for(int i = 0; i < map.length; i++){
-			for(int j = 0; j < map[0].length; j++){
-				map[i][j] = 0;
-			}
-		}
-		
+
 		tiles = new BufferedImage[16*16];
 		
 		loader = new Loader();
@@ -135,8 +130,12 @@ public class Manager {
 		tileWidth = tiles[0].getWidth();
 		tileHeight = tiles[0].getHeight();
 		
-		tileWidth = tileHeight = 72;
-		
+		//MAY WANT TO TAKE OUT
+		while(tileWidth < 64){
+			tileWidth *= 1.5f;
+			tileHeight *= 1.5f;
+		}
+				
 		load = new JButton("Load Map");
 		load.setBounds(820, 10, 120,30);
 		panel.add(load);
@@ -148,33 +147,20 @@ public class Manager {
 		temp.setBounds(800,20,500,50);
 		panel.add(temp);
 		
-		boxWidth = new SizeBox(panel, this,1000, 545, 40,30, ""+map[0].length,0);
-		boxHeight = new SizeBox(panel, this,1060, 545, 40,30, ""+map.length,1);
+		boxWidth = new SizeBox(panel, this,1000, 545, 40,30, "",0);
+		boxHeight = new SizeBox(panel, this,1060, 545, 40,30, "",1);
 		
 		x = new JLabel("X");
 		x.setBounds(1044,545,40,30);
 		panel.add(x);
-		
-		pressing = new boolean[9];
-		for(int i = 0; i < pressing.length; i++)
-			pressing[i] = false;
-		
-		camera = new Camera(0, 0, 780, 500);
-		
-		ribbon = -1;
-		
+	
 		dimensions = new JLabel("Map size ");
 		dimensions.setBounds(920,540,250,40);
 		panel.add(dimensions);
 		
 		changeMode = new JButton("To Box Mode");
 		changeMode.setBounds(10,540,140,40);
-		panel.add(changeMode);
-		
-		numPlatform = 0;
-		platforms = new ArrayList<Platform>();
-		
-		positiony = 0;
+		panel.add(changeMode);	
 		
 		up = new JButton("^");
 		down = new JButton("v");
@@ -182,9 +168,7 @@ public class Manager {
 		down.setBounds(1045,392,50,115);
 		
 		panel.add(up);
-		panel.add(down);
-		
-		boxtool = 3;
+		panel.add(down);		
 		
 		createbox = new JButton("Create Box");
 		deletebox = new JButton("Delete Box");
@@ -229,51 +213,25 @@ public class Manager {
 		
 		widthMult.setBounds(620, 520, 40, 30);
 		heightMult.setBounds(620, 560, 40, 30);
-
 		
 		panel.add(widthMult);
 		panel.add(heightMult);
 		panel.add(widthResult);
 		panel.add(heightResult);
 		
-		mousePosition = new Point(0, 0);
-		
-		String [] options = {"New Map","Load Map","Cancel"};
-		
-		int resp = JOptionPane.showOptionDialog(null,"Choose something","Map editor",JOptionPane.DEFAULT_OPTION,
-				JOptionPane.PLAIN_MESSAGE,null,options, options[0]);
-		
+		menuBar = new MenuBar(this,panel);
+				
 		FileNameExtensionFilter filter = new FileNameExtensionFilter(".map FILES", "map");
 		explorer = new JFileChooser();
 		explorer.setFileFilter(filter);
-		
-		selectedPlatform = null;
-		
-		creation = 0;
-		
-		newWidth = 0;
-		newHeight = 0;
-		newX = 0;
-		newY = 0;
-		
-		if(resp == 2)System.exit(0);
-		if(resp == 1){
-			loadMap();		
-		}
-		changedMode = false;
-		
-		control_z = new ArrayList<String>();
-		
-		control = z = redo = false;
-		
-		lastTileChanged = new Point(-1, -1);
-		lastPlatform = new Point(-1, -1);
-		lastId = -1;
-		
-		menuBar = new MenuBar(this,panel);
+
+		newMap();		
 		
 		
+		cursorColor = new Color(0,0,255,100);		
 	}
+	
+	
 	
 	public void update(){
 		
@@ -677,6 +635,12 @@ public class Manager {
 				
 			}
 		}
+		gm.setColor(cursorColor);
+		int col = mouseMapPos().x/tileWidth;
+		int line = mouseMapPos().y/tileHeight;
+		gm.fillRect((int)(col*tileWidth-camera.getX()),	(int)(500-tileHeight-line * tileHeight-camera.getY())
+				,tileWidth,tileHeight);
+		gm.setColor(Color.WHITE);
 		
 		int currentLine = -1;
 		for(int i = 0; i < tiles.length; i++){
@@ -988,7 +952,6 @@ public class Manager {
 		catch(Exception e){
 			JOptionPane.showMessageDialog(null, "Could not save");
 		}	
-		
 	}
 	
 	
@@ -1007,7 +970,7 @@ public class Manager {
 				}
 			}
 			else{
-				JOptionPane.showMessageDialog(null, "Ok then... Loading clear map");
+				JOptionPane.showMessageDialog(null, "Oops, could not load a map");
 				return;
 			}
 			
@@ -1051,6 +1014,51 @@ public class Manager {
 		}
 		
 		
+	}
+	public void newMap(){
+		control = z = redo = false;
+		control_z = new ArrayList<String>();
+		lastTileChanged = new Point(-1, -1);
+		lastPlatform = new Point(-1, -1);
+		lastId = -1;
+		changedMode = false;
+		creation = 0;
+		newWidth = 0;
+		newHeight = 0;
+		newX = 0;pressing = new boolean[9];
+		for(int i = 0; i < pressing.length; i++)
+			pressing[i] = false;
+		newY = 0;
+		selectedPlatform = null;
+		mousePosition = new Point(0, 0);
+		widthMult.setText("0");
+		heightMult.setText("0");
+		widthResult.setText("X Tile Width = 0");
+		heightResult.setText("X Tile Height = 0");
+		currentTool.setText("Current Tool: Delete Tile");
+		mode.setText("Mode: Tile");
+		boxtool = 3;
+		numPlatform = 0;
+		positiony = 0;
+		platforms = new ArrayList<Platform>();
+		changeMode.setText("To Box Mode");
+		camera = new Camera(0, 0, 780, 500);
+		ribbon = -1;	
+		pressing = new boolean[9];
+		for(int i = 0; i < pressing.length; i++)
+			pressing[i] = false;
+		map = new int[9][12];
+		for(int i = 0; i < map.length; i++){
+			for(int j = 0; j < map[0].length; j++){
+				map[i][j] = 0;
+			}
+		}
+		boxWidth.setText(""+map[0].length);
+		boxHeight.setText(""+map.length);
+	}
+	
+	public void setCursorColor(Color color){
+		cursorColor = color;
 	}
 	
 	public Point mouseMapPos(){
