@@ -1,6 +1,7 @@
 package elements;
 
 import java.awt.Color;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -19,7 +20,7 @@ public class MenuBar extends JMenuBar implements ActionListener{
 	
 	private final int FILE = 0, OPTION = 1,HELP = 2;
 	private final int NEWMAP = 0, SAVEMAP = 1, LOADMAP = 2, CHANGECOLOR = 3, TILESPEED = 4,ABOUT = 5,
-			RESET= 6;
+			RESET= 6,CAMSPEED = 7;
 	
 	private Manager manager;
 	
@@ -36,7 +37,7 @@ public class MenuBar extends JMenuBar implements ActionListener{
 		this.manager = manager;
 		
 		menu = new JMenu[3];
-		menuItem = new JMenuItem[7];
+		menuItem = new JMenuItem[8];
 		
 		menu[FILE] = new JMenu("File");
 		menu[FILE].setMnemonic(KeyEvent.VK_F1);
@@ -68,14 +69,18 @@ public class MenuBar extends JMenuBar implements ActionListener{
 		menuItem[SAVEMAP].getAccessibleContext().setAccessibleDescription("Saves the current map to a map file");		
 		menu[FILE].add(menuItem[SAVEMAP]);
 		
-		menuItem[CHANGECOLOR] = new JMenuItem("Cursor Color");
-		menuItem[CHANGECOLOR].getAccessibleContext().setAccessibleDescription("Loads a map file");		
-		menu[OPTION].add(menuItem[CHANGECOLOR]);
+		menuItem[CAMSPEED] = new JMenuItem("Camera Speed");
+		menuItem[CAMSPEED].getAccessibleContext().setAccessibleDescription("Changes the speed of the camera");		
+		menu[OPTION].add(menuItem[CAMSPEED]);
 		
 		menuItem[TILESPEED] = new JMenuItem("Tile Search Speed");
 		menuItem[TILESPEED].getAccessibleContext().setAccessibleDescription("Changes the speed of the tile browse buttons");		
 		menu[OPTION].add(menuItem[TILESPEED]);
 				
+		menuItem[CHANGECOLOR] = new JMenuItem("Cursor Color");
+		menuItem[CHANGECOLOR].getAccessibleContext().setAccessibleDescription("Loads a map file");		
+		menu[OPTION].add(menuItem[CHANGECOLOR]);
+		
 		menuItem[ABOUT] = new JMenuItem("Help me");
 		menuItem[ABOUT].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_H,ActionEvent.CTRL_MASK));
 		menuItem[ABOUT].getAccessibleContext().setAccessibleDescription("Shows the commands");		
@@ -181,6 +186,16 @@ public class MenuBar extends JMenuBar implements ActionListener{
 				manager.defaultConfig();
 				manager.saveConfig();
 			}
+		}
+		else if(o == menuItem[CAMSPEED]){
+			MultipleInputPane pane = new MultipleInputPane();
+			String [] fieldText = {"X SPEED: ","Y SPEED: "};
+			String [] fieldValue = {""+manager.getCameraSpeed().x,""+manager.getCameraSpeed().y};
+			int [] resp = pane.getNumberInputs("Define the camera speed in pixels", fieldText, fieldValue, 2);
+			if(resp != null){
+				manager.setCameraSpeed(new Point(resp[0],resp[1]));
+			}	
+			
 		}
 	} 
 }

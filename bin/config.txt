@@ -1,2 +1,3 @@
 tileSpeed 20
 cursorColor 0 0 255 100
+cameraSpeed 36 36

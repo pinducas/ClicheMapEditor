@@ -93,6 +93,7 @@ public class Manager {
 	private JFileChooser explorer;
 	
 	private Point mousePosition;
+	private Point camSpeed;
 	
 	private Color cursorColor;
 	
@@ -221,8 +222,7 @@ public class Manager {
 				newMap();
 			}
 		}
-		
-		
+			
 		loadConfig();
 		
 	}
@@ -680,23 +680,23 @@ public class Manager {
 	public void keyPressed(int k) {
 		if(k == KeyEvent.VK_D && !pressing[D]){
 			if(camera.getX() < tileWidth * (map[0].length-1) - camera.getW())
-				camera.translate(tileWidth/2f, 0);	
+				camera.translate(camSpeed.x, 0);	
 			pressing[D] = true;
 	
 		}
 		if(k == KeyEvent.VK_A && !pressing[A]){
 			if(camera.getX() > 0)
-				camera.translate(-tileWidth/2f, 0);	
+				camera.translate(-camSpeed.x, 0);	
 			pressing[A] = true;
 		}
 		if(k == KeyEvent.VK_W && !pressing[W]){
 			if(camera.getY() > -tileHeight*(map.length-1)+camera.getH())
-			camera.translate(0,-tileWidth/2f);	
+			camera.translate(0,-camSpeed.y);	
 			pressing[W] = true;
 		}
 		if(k == KeyEvent.VK_S && !pressing[S]){
 			if(camera.getY() < 0)
-				camera.translate(0, tileWidth/2f);
+				camera.translate(0, camSpeed.y);
 			pressing[S] = true;
 		}
 		if(k == KeyEvent.VK_ENTER && !pressedEnter){
@@ -975,7 +975,8 @@ public class Manager {
 			
 			out.println("tileSpeed "+tileSpeed);
 			out.println("cursorColor "+cursorColor.getRed()+" "+cursorColor.getGreen()+" "+cursorColor.getBlue()+" "+cursorColor.getAlpha());
-			
+			out.println("cameraSpeed "+camSpeed.x+" "+camSpeed.y);
+
 			out.close();
 		}
 		catch(Exception e){
@@ -1048,7 +1049,9 @@ public class Manager {
 			tileSpeed = Integer.parseInt(temp[1]);
 			temp = in.nextLine().split(" ");
 			cursorColor = new Color(Integer.parseInt(temp[1]),Integer.parseInt(temp[2]),Integer.parseInt(temp[3]),Integer.parseInt(temp[4]));
-		
+			temp = in.nextLine().split(" ");
+			camSpeed = new Point(Integer.parseInt(temp[1]),Integer.parseInt(temp[2]));
+			
 			in.close();
 			
 		}catch(Exception e){
@@ -1164,6 +1167,18 @@ public class Manager {
 		
 	}
 	
+	public Point getCameraSpeed(){
+		return camSpeed;
+	}
+	
+	public void setCameraSpeed(Point speed){
+		if(speed.x < 0)speed.x = 1;
+		if(speed.y < 0)speed.y = 1;
+		if(speed.x > 800)speed.x = 800;
+		if(speed.y > 800)speed.y = 800;
+		this.camSpeed = speed;
+		saveConfig();
+	}
 	
 	public Color getCursorColor(){
 		return cursorColor;
@@ -1172,6 +1187,7 @@ public class Manager {
 		tileSpeed = 20;
 		cursorColor = new Color(0,0,255,100);	
 		positiony = 0;
+		camSpeed = new Point((int)(tileWidth/2f),(int)(tileHeight/2f));
 		camera.setPosition(0, 0);
 	}
 	
