@@ -18,7 +18,7 @@ import managers.Manager;
 public class MenuBar extends JMenuBar implements ActionListener{
 	
 	private final int FILE = 0, OPTION = 1;
-	private final int NEWMAP = 0, SAVEMAP = 1, LOADMAP = 2, CHANGECOLOR = 3;
+	private final int NEWMAP = 0, SAVEMAP = 1, LOADMAP = 2, CHANGECOLOR = 3, TILESPEED = 4;
 	
 	private Manager manager;
 	
@@ -35,7 +35,7 @@ public class MenuBar extends JMenuBar implements ActionListener{
 		this.manager = manager;
 		
 		menu = new JMenu[2];
-		menuItem = new JMenuItem[4];
+		menuItem = new JMenuItem[5];
 		
 		menu[FILE] = new JMenu("File");
 		menu[FILE].setMnemonic(KeyEvent.VK_F1);
@@ -63,9 +63,12 @@ public class MenuBar extends JMenuBar implements ActionListener{
 		menu[FILE].add(menuItem[LOADMAP]);
 		
 		menuItem[CHANGECOLOR] = new JMenuItem("Cursor Color");
-		menuItem[CHANGECOLOR].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P,ActionEvent.CTRL_MASK));
 		menuItem[CHANGECOLOR].getAccessibleContext().setAccessibleDescription("Loads a map file");		
 		menu[OPTION].add(menuItem[CHANGECOLOR]);
+		
+		menuItem[TILESPEED] = new JMenuItem("Tile Search Speed");
+		menuItem[TILESPEED].getAccessibleContext().setAccessibleDescription("Changes the speed of the tile browse buttons");		
+		menu[OPTION].add(menuItem[TILESPEED]);
 		
 		
 		for(JMenuItem jm:menuItem)jm.addActionListener(this);
@@ -130,12 +133,28 @@ public class MenuBar extends JMenuBar implements ActionListener{
 		else if(o == menuItem[CHANGECOLOR]){
 			MultipleInputPane pane = new MultipleInputPane();
 			String [] fieldText = {"R: ","G: ","B: ","A: "};
-			int [] resp = pane.getNumberInputs("Define the R G B A values", fieldText, null, 4);
+			Color c = manager.getCursorColor();
+			String [] fieldValue = {""+c.getRed(),""+c.getGreen(),""+c.getBlue(),""+c.getAlpha()};
+			int [] resp = pane.getNumberInputs("Define the R G B A values", fieldText, fieldValue, 4);
 			if(resp != null){
 				manager.setCursorColor(new Color(resp[0],resp[1],resp[2],resp[3]));
 			}			
 		}
-
+		else if(o == menuItem[TILESPEED]){
+			String resp = JOptionPane.showInputDialog("What speed would you like it?",""+manager.getTileSpeed());
+			if(resp == null){
+				JOptionPane.showMessageDialog(null, "Oops, could not change tile browse speed");
+				return;
+			}
+			try{
+				int speed = Integer.parseInt(resp);
+				manager.setTileSpeed(speed);
+			}
+			catch(Exception ee){
+				JOptionPane.showMessageDialog(null, "Oops, could not change tile browse speed");
+				return;
+			}
+		}
 		
 	} 
 }

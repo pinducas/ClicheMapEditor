@@ -80,8 +80,6 @@ public class Manager {
 	private JPanel panel;
 	
 	private JButton changeMode;
-	private JButton save;
-	private JButton load;
 	private JButton createbox;
 	private JButton deletebox;
 	private JButton movebox;
@@ -91,6 +89,7 @@ public class Manager {
 	private JButton up;
 	private JButton down;
 	private int positiony;
+	private int tileSpeed;
 	
 	private JFileChooser explorer;
 	
@@ -134,18 +133,7 @@ public class Manager {
 		while(tileWidth < 64){
 			tileWidth *= 1.5f;
 			tileHeight *= 1.5f;
-		}
-				
-		load = new JButton("Load Map");
-		load.setBounds(820, 10, 120,30);
-		panel.add(load);
-		save = new JButton("Save Map");
-		save.setBounds(975, 10, 120,30);
-		panel.add(save);
-		
-		JLabel temp = new JLabel("___________________________________________________");
-		temp.setBounds(800,20,500,50);
-		panel.add(temp);
+		}	
 		
 		boxWidth = new SizeBox(panel, this,1000, 545, 40,30, "",0);
 		boxHeight = new SizeBox(panel, this,1060, 545, 40,30, "",1);
@@ -175,11 +163,11 @@ public class Manager {
 		movebox = new JButton("Move Box");
 		changebox = new JButton("Define Box");
 		selectbox = new JButton("Select Box");
-		createbox.setBounds(820, 80, 120,30);
-		deletebox.setBounds(975, 80, 120,30);
-		movebox.setBounds(820, 125, 120,30);
-		changebox.setBounds(975, 125, 120,30);
-		selectbox.setBounds(820, 170, 120,30);
+		createbox.setBounds(820, 30, 120,30);
+		deletebox.setBounds(975, 30, 120,30);
+		movebox.setBounds(820, 75, 120,30);
+		changebox.setBounds(975, 75, 120,30);
+		selectbox.setBounds(820, 120, 120,30);
 		
 		panel.add(createbox);
 		panel.add(deletebox);
@@ -187,32 +175,32 @@ public class Manager {
 		panel.add(changebox);
 		panel.add(selectbox);
 		
-		temp = new JLabel("Platforms");
-		temp.setBounds(820,40,500,50);
+		JLabel temp = new JLabel("Platforms");
+		temp.setBounds(820,-10,500,50);
 		panel.add(temp);
 		
 		temp = new JLabel("___________________________________________________");
-		temp.setBounds(800,180,500,50);
+		temp.setBounds(800,130,500,50);
 		panel.add(temp);
 		
 		currentTool = new JLabel("Current Tool: Delete Tile");
-		currentTool.setBounds(800, 205, 520, 50);
+		currentTool.setBounds(150, 500, 520, 50);
 		panel.add(currentTool);
 		mode = new JLabel("Mode: Tile");
-		mode.setBounds(800, 225, 520, 50);
+		mode.setBounds(10, 500, 520, 50);
 		panel.add(mode);
 		
 		widthResult = new JLabel("X Tile Width = 0");
 		heightResult = new JLabel("X Tile Height = 0");
 		
-		widthResult.setBounds(664, 510, 520, 50);
-		heightResult.setBounds(664, 550, 520, 50);
+		widthResult.setBounds(600, 535, 520, 50);
+		heightResult.setBounds(770, 535, 520, 50);
 
 		widthMult = new JTextField("0");
 		heightMult = new JTextField("0");
 		
-		widthMult.setBounds(620, 520, 40, 30);
-		heightMult.setBounds(620, 560, 40, 30);
+		widthMult.setBounds(560, 545, 40, 30);
+		heightMult.setBounds(730, 545, 40, 30);
 		
 		panel.add(widthMult);
 		panel.add(heightMult);
@@ -227,8 +215,8 @@ public class Manager {
 
 		newMap();		
 		
+		loadConfig();
 		
-		cursorColor = new Color(0,0,255,100);		
 	}
 	
 	
@@ -563,14 +551,7 @@ public class Manager {
 	}
 	
 	public void buttonHandling(){
-		if(load.getModel().isPressed()){
-			loadMap();
-			panel.requestFocus();
-		}
-		else if(save.getModel().isPressed()){
-			saveMap();
-			panel.requestFocus();
-		}
+		
 		if(changeMode.getModel().isPressed() && !changedMode){
 			showPlatforms = !showPlatforms;
 			if(showPlatforms){
@@ -587,38 +568,30 @@ public class Manager {
 				ribbon = 0;
 			}
 			changedMode = true;
-			panel.requestFocus();
 		}
 		if(!changeMode.getModel().isPressed()){
 			changedMode = false;
 		}
 		if(up.getModel().isPressed() && positiony > 0){
-			positiony -= 10;
-			panel.requestFocus();
+			positiony -= tileSpeed;
 		}
 		else if(down.getModel().isPressed()){
-			positiony += 10;
-			panel.requestFocus();
+			positiony += tileSpeed;
 		}
 		else if(createbox.getModel().isPressed()){
 			boxtool = 0;
-			panel.requestFocus();
 		}
 		else if(deletebox.getModel().isPressed()){
 			boxtool = 1;
-			panel.requestFocus();
 		}
 		else if(movebox.getModel().isPressed()){
 			boxtool = -1;
-			panel.requestFocus();
 		}
 		else if(changebox.getModel().isPressed()){
 			boxtool = 2;
-			panel.requestFocus();
 		}
 		else if(selectbox.getModel().isPressed()){
 			boxtool = 3;
-			panel.requestFocus();
 		}
 	}
 	
@@ -837,6 +810,10 @@ public class Manager {
 	public void mouseMoved(MouseEvent e){
 		mousePosition.x = e.getX();
 		mousePosition.y = e.getY();
+			
+		if(mousePosition.x < 800){
+			panel.requestFocus();
+		}
 		
 	}
 	
@@ -899,6 +876,86 @@ public class Manager {
 	}
 	
 	
+	
+	
+	
+	
+	public void newMap(){
+		control = z = redo = false;
+		control_z = new ArrayList<String>();
+		lastTileChanged = new Point(-1, -1);
+		lastPlatform = new Point(-1, -1);
+		lastId = -1;
+		changedMode = false;
+		creation = 0;
+		newWidth = 0;
+		newHeight = 0;
+		newX = 0;pressing = new boolean[9];
+		for(int i = 0; i < pressing.length; i++)
+			pressing[i] = false;
+		newY = 0;
+		selectedPlatform = null;
+		mousePosition = new Point(0, 0);
+		widthMult.setText("0");
+		heightMult.setText("0");
+		widthResult.setText("X Tile Width = 0");
+		heightResult.setText("X Tile Height = 0");
+		currentTool.setText("Current Tool: Delete Tile");
+		mode.setText("Mode: Tile");
+		boxtool = 3;
+		numPlatform = 0;
+		positiony = 0;
+		platforms = new ArrayList<Platform>();
+		changeMode.setText("To Box Mode");
+		camera = new Camera(0, 0, 780, 500);
+		ribbon = -1;	
+		pressing = new boolean[9];
+		for(int i = 0; i < pressing.length; i++)
+			pressing[i] = false;
+		map = new int[9][12];
+		for(int i = 0; i < map.length; i++){
+			for(int j = 0; j < map[0].length; j++){
+				map[i][j] = 0;
+			}
+		}
+		boxWidth.setText(""+map[0].length);
+		boxHeight.setText(""+map.length);
+	}
+	
+	public void setCursorColor(Color color){
+		cursorColor = color;
+		saveConfig();
+	}
+	
+	public void setTileSpeed(int speed){
+		if(speed < 0)speed = 0;
+		if(speed > 200)speed = 200;
+		this.tileSpeed = speed;
+		saveConfig();
+	}
+	public int getTileSpeed(){
+		return tileSpeed;
+	}
+	
+	public Point mouseMapPos(){
+		return new Point((int)(camera.getX()+mousePosition.x-10),(int)(510-mousePosition.y-camera.getY()));
+	}
+	
+	public void saveConfig(){
+		try{
+			File file = new File(getClass().getResource("/config.txt").toURI());
+			file.createNewFile();
+			PrintWriter out = new PrintWriter(file);
+			
+			out.println("tileSpeed "+tileSpeed);
+			out.println("cursorColor "+cursorColor.getRed()+" "+cursorColor.getGreen()+" "+cursorColor.getBlue()+" "+cursorColor.getAlpha());
+			
+			out.close();
+		}
+		catch(Exception e){
+			JOptionPane.showMessageDialog(null, "Could not save changes");
+		}		
+	}
 	public void saveMap(){
 		try{
 			int resp = explorer.showSaveDialog(panel);
@@ -953,7 +1010,26 @@ public class Manager {
 			JOptionPane.showMessageDialog(null, "Could not save");
 		}	
 	}
-	
+	public void loadConfig(){
+		try{
+			File file = new File(getClass().getResource("/config.txt").toURI());
+			
+			
+			Scanner in = new Scanner(file);
+			
+			String []temp = in.nextLine().split(" ");
+
+			tileSpeed = Integer.parseInt(temp[1]);
+			temp = in.nextLine().split(" ");
+			cursorColor = new Color(Integer.parseInt(temp[1]),Integer.parseInt(temp[2]),Integer.parseInt(temp[3]),Integer.parseInt(temp[4]));
+		
+			in.close();
+			
+		}catch(Exception e){
+			defaultConfig();
+		}
+		
+	}
 	
 	public void loadMap(){
 		try{
@@ -1015,54 +1091,14 @@ public class Manager {
 		
 		
 	}
-	public void newMap(){
-		control = z = redo = false;
-		control_z = new ArrayList<String>();
-		lastTileChanged = new Point(-1, -1);
-		lastPlatform = new Point(-1, -1);
-		lastId = -1;
-		changedMode = false;
-		creation = 0;
-		newWidth = 0;
-		newHeight = 0;
-		newX = 0;pressing = new boolean[9];
-		for(int i = 0; i < pressing.length; i++)
-			pressing[i] = false;
-		newY = 0;
-		selectedPlatform = null;
-		mousePosition = new Point(0, 0);
-		widthMult.setText("0");
-		heightMult.setText("0");
-		widthResult.setText("X Tile Width = 0");
-		heightResult.setText("X Tile Height = 0");
-		currentTool.setText("Current Tool: Delete Tile");
-		mode.setText("Mode: Tile");
-		boxtool = 3;
-		numPlatform = 0;
-		positiony = 0;
-		platforms = new ArrayList<Platform>();
-		changeMode.setText("To Box Mode");
-		camera = new Camera(0, 0, 780, 500);
-		ribbon = -1;	
-		pressing = new boolean[9];
-		for(int i = 0; i < pressing.length; i++)
-			pressing[i] = false;
-		map = new int[9][12];
-		for(int i = 0; i < map.length; i++){
-			for(int j = 0; j < map[0].length; j++){
-				map[i][j] = 0;
-			}
-		}
-		boxWidth.setText(""+map[0].length);
-		boxHeight.setText(""+map.length);
+	
+	public Color getCursorColor(){
+		return cursorColor;
 	}
 	
-	public void setCursorColor(Color color){
-		cursorColor = color;
-	}
-	
-	public Point mouseMapPos(){
-		return new Point((int)(camera.getX()+mousePosition.x-10),(int)(510-mousePosition.y-camera.getY()));
+	public void defaultConfig(){
+		tileSpeed = 20;
+		cursorColor = new Color(0,0,255,100);	
 	}
 	
 }
