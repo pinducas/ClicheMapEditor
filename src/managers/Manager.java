@@ -115,33 +115,15 @@ public class Manager {
 	private JTextField widthMult;
 	private JTextField heightMult;
 	
+	private String path;
+	private Point tilesetDim;
+	
 	public MenuBar menuBar;
+	
+	private BufferedImage sheet;
 	
 	public Manager(Panel panel,String []args){
 		this.panel = panel;
-
-		tiles = new BufferedImage[16*16];
-		
-		loader = new Loader();
-
-		BufferedImage sheet = loader.loadImage("Tiles.png");		
-		
-		int current = 0;
-		for(int line = 0; line < 16; line++){
-			for(int col = 0; col < 16; col++){
-				tiles[current] = sheet.getSubimage(32*col, 32*line, 32, 32);
-				current++;
-			}
-		}
-		
-		tileWidth = tiles[0].getWidth();
-		tileHeight = tiles[0].getHeight();
-		
-		//MAY WANT TO TAKE OUT
-		while(tileWidth < 64){
-			tileWidth *= 1.5f;
-			tileHeight *= 1.5f;
-		}	
 		
 		boxWidth = new SizeBox(panel, this,1000, 545, 40,30, "",0);
 		boxHeight = new SizeBox(panel, this,1060, 545, 40,30, "",1);
@@ -217,6 +199,9 @@ public class Manager {
 		FileNameExtensionFilter filter = new FileNameExtensionFilter(".map FILES", "map");
 		explorer = new JFileChooser();
 		explorer.setFileFilter(filter);
+	
+		tileWidth = 72;
+		tileHeight = 72;
 		newMap();	
 
 		
@@ -230,9 +215,46 @@ public class Manager {
 			
 		loadConfig();
 	
-		
 	}
 	
+	
+	public void setImagePath(String path){
+		try{
+			loader = new Loader();
+			this.path = path;
+			
+			sheet = loader.loadImage(path);
+						
+			tileWidth = sheet.getWidth()/tilesetDim.x;
+			tileHeight = sheet.getHeight()/tilesetDim.y;
+						
+			tiles = new BufferedImage[tilesetDim.x*tilesetDim.y];
+			
+			int current = 0;
+			for(int line = 0; line < tilesetDim.y; line++){
+				for(int col = 0; col < tilesetDim.x; col++){
+					Rectangle a = new Rectangle(tileWidth*col, tileHeight*line, tileWidth, tileHeight);
+					System.out.println(a);
+					tiles[current] = sheet.getSubimage(tileWidth*col, tileHeight*line, tileWidth, tileHeight);
+					current++;
+				}
+			}
+			
+			//MAY WANT TO TAKE OUT
+			while(tileWidth < 64){
+				tileWidth *= 1.5f;
+				tileHeight *= 1.5f;
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+			
+		}
+		newMap();
+	}
+	public void setTilesAccross(int a,int b){
+		tilesetDim = new Point(a,b);
+		System.out.println("TILES SETED");
+	}
 	
 	
 	public void update(){
@@ -808,6 +830,7 @@ public class Manager {
 	}
 	
 	public void draw(Graphics2D gm,Graphics2D gt){
+	
 		for(int line = 0; line < map.length; line++){
 			for(int col = 0; col < map[0].length; col++){
 				if(map[line][col] == -1)continue;
@@ -1157,7 +1180,9 @@ public class Manager {
 		pressing = new boolean[20];
 		for(int i = 0; i < pressing.length; i++)
 			pressing[i] = false;
-		map = new int[9][12];
+		
+		map = new int[2+(int)Math.ceil(500f/tileHeight)][2+(int)Math.ceil(780f/tileWidth)];
+		
 		for(int i = 0; i < map.length; i++){
 			for(int j = 0; j < map[0].length; j++){
 				map[i][j] = 0;
@@ -1198,7 +1223,10 @@ public class Manager {
 			out.println("tileSpeed "+tileSpeed);
 			out.println("cursorColor "+cursorColor.getRed()+" "+cursorColor.getGreen()+" "+cursorColor.getBlue()+" "+cursorColor.getAlpha());
 			out.println("cameraSpeed "+camSpeed.x+" "+camSpeed.y);
-
+			out.println("tilesetPath "+path);
+			out.println("tilesetSizes "+tilesetDim.x+" "+tilesetDim.y);
+			
+			
 			out.close();
 		}
 		catch(Exception e){
@@ -1267,7 +1295,6 @@ public class Manager {
 		try{
 			File file = new File(getClass().getResource("/config.txt").toURI());
 			
-			
 			Scanner in = new Scanner(file);
 			
 			String []temp = in.nextLine().split(" ");
@@ -1277,6 +1304,15 @@ public class Manager {
 			cursorColor = new Color(Integer.parseInt(temp[1]),Integer.parseInt(temp[2]),Integer.parseInt(temp[3]),Integer.parseInt(temp[4]));
 			temp = in.nextLine().split(" ");
 			camSpeed = new Point(Integer.parseInt(temp[1]),Integer.parseInt(temp[2]));
+			temp = in.nextLine().split(" ");
+			String tempPath = temp[1];
+			temp = in.nextLine().split(" ");
+			int tempW = Integer.parseInt(temp[1]);
+			int tempH = Integer.parseInt(temp[2]);
+			
+			setTilesAccross(tempW, tempH);
+			setImagePath(tempPath);
+			
 			
 			in.close();
 			
@@ -1284,6 +1320,11 @@ public class Manager {
 			defaultConfig();
 		}
 		
+	}
+	
+	public String[] getMapDim(){
+		String i[] = {""+tilesetDim.x,""+tilesetDim.y};
+		return i;
 	}
 	
 	public void loadMap(){
@@ -1418,12 +1459,40 @@ public class Manager {
 	public Color getCursorColor(){
 		return cursorColor;
 	}
-	public void defaultConfig(){
+	public void defaultConfig(){	
+		loader = new Loader();
+
+		tiles = new BufferedImage[16*16];
+		path = "Tiles.png";
+		tilesetDim = new Point(16,16);
+		
+		sheet = loader.loadInsideImage(path);	
+		
+		int current = 0;
+		for(int line = 0; line < 16; line++){
+			for(int col = 0; col < 16; col++){
+				tiles[current] = sheet.getSubimage(32*col, 32*line, 32, 32);
+				current++;
+			}
+		}
+		
+		tileWidth = tiles[0].getWidth();
+		tileHeight = tiles[0].getHeight();
+		
+		//MAY WANT TO TAKE OUT
+		while(tileWidth < 64){
+			tileWidth *= 1.5f;
+			tileHeight *= 1.5f;
+		}
+		
 		tileSpeed = 20;
 		cursorColor = new Color(0,0,255,100);	
 		positiony = 0;
 		camSpeed = new Point((int)(tileWidth/2f),(int)(tileHeight/2f));
 		camera.setPosition(0, 0);
+		
+		
+		
 	}
 	
 	public JButton createButton(String text,int x,int y,int width,int height){

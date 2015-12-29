@@ -6,11 +6,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 
+import javax.swing.JFileChooser;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.KeyStroke;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import core.Panel;
 import managers.Manager;
@@ -20,7 +22,7 @@ public class MenuBar extends JMenuBar implements ActionListener{
 	
 	private final int FILE = 0, OPTION = 1,HELP = 2;
 	private final int NEWMAP = 0, SAVEMAP = 1, LOADMAP = 2, CHANGECOLOR = 3, TILESPEED = 4,ABOUT = 5,
-			RESET= 6,CAMSPEED = 7;
+			RESET= 6,CAMSPEED = 7,CHANGETILE = 8;
 	
 	private Manager manager;
 	
@@ -37,7 +39,7 @@ public class MenuBar extends JMenuBar implements ActionListener{
 		this.manager = manager;
 		
 		menu = new JMenu[3];
-		menuItem = new JMenuItem[8];
+		menuItem = new JMenuItem[9];
 		
 		menu[FILE] = new JMenu("File");
 		menu[FILE].setMnemonic(KeyEvent.VK_F1);
@@ -80,6 +82,10 @@ public class MenuBar extends JMenuBar implements ActionListener{
 		menuItem[CHANGECOLOR] = new JMenuItem("Cursor Color");
 		menuItem[CHANGECOLOR].getAccessibleContext().setAccessibleDescription("Loads a map file");		
 		menu[OPTION].add(menuItem[CHANGECOLOR]);
+		
+		menuItem[CHANGETILE] = new JMenuItem("Change tileset");
+		menuItem[CHANGETILE].getAccessibleContext().setAccessibleDescription("Change the tileset");		
+		menu[OPTION].add(menuItem[CHANGETILE]);
 		
 		menuItem[ABOUT] = new JMenuItem("Help me");
 		menuItem[ABOUT].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_H,ActionEvent.CTRL_MASK));
@@ -194,8 +200,37 @@ public class MenuBar extends JMenuBar implements ActionListener{
 			int [] resp = pane.getNumberInputs("Define the camera speed in pixels", fieldText, fieldValue, 2);
 			if(resp != null){
 				manager.setCameraSpeed(new Point(resp[0],resp[1]));
-			}	
-			
+			}
 		}
+		else if(o == menuItem[CHANGETILE]){
+			FileNameExtensionFilter filter = new FileNameExtensionFilter(".png FILES", "png");
+			JFileChooser explorer = new JFileChooser();
+			explorer.setFileFilter(filter);
+			
+			int r = explorer.showOpenDialog(null);
+			
+			if(r != JFileChooser.APPROVE_OPTION)return;
+			if(!explorer.getSelectedFile().exists())return;
+			
+			String a = explorer.getSelectedFile().getAbsolutePath();
+			
+				
+			MultipleInputPane pane = new MultipleInputPane();
+			String [] fieldText = {"Tiles Accross x: ","Tiles Accross y: "};
+			String [] fieldValue = {""+manager.getMapDim()[0],""+manager.getMapDim()[1]};
+			
+			int [] resp = pane.getNumberInputs("Define the number of tiles in the seet", fieldText, fieldValue, 2);
+			if(resp != null)manager.setCameraSpeed(new Point(resp[0],resp[1]));
+			
+			JOptionPane.showMessageDialog(null, "PATH: "+a+" SIZES "+resp[0]+" "+resp[1]);
+			
+			manager.setTilesAccross(resp[0], resp[1]);
+			manager.setImagePath(a);
+			
+			
+			manager.saveConfig();
+			//manager.loadConfig();
+		}
+		
 	} 
 }

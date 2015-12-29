@@ -1,3 +1,5 @@
 tileSpeed 20
 cursorColor 0 0 255 100
 cameraSpeed 36 36
+tilesetPath Tiles.png
+tilesetSizes 16 16
